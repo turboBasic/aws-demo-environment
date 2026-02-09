@@ -1,3 +1,5 @@
 aws_region    = "eu-central-1"
 environment   = "demo"
 project_name  = "aws-demo"
+instance_type = "t3.micro"
+vpc_cidr      = "10.0.0.0/16"
