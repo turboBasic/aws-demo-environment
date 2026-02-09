@@ -1,0 +1,3 @@
+aws_region    = "eu-central-1"
+environment   = "demo"
+project_name  = "aws-demo"
