@@ -1,0 +1,2 @@
+[tools]
+terraform = "prefix:1.14"
