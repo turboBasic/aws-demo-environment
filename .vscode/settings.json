@@ -1,0 +1,17 @@
+{
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#1f2045",
+        "titleBar.activeBackground": "#2e2c60",
+        "titleBar.activeForeground": "#FCF9FC"
+    },
+    "files.exclude": {
+        "**/.git": false,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/.git disable exclusion of .git": true,
+        ".git": true
+    },
+    "explorerExclude.backup": {}
+}
