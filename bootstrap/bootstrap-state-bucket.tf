@@ -5,6 +5,10 @@
 resource "aws_s3_bucket" "bootstrap_state" {
   bucket = "${local.name_prefix}-bootstrap-state-${local.account_id}"
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = merge(local.common_tags, {
     Name    = "${local.name_prefix}-bootstrap-state"
     Purpose = "Backup storage for bootstrap terraform.tfstate"

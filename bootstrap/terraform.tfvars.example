@@ -1,5 +1,5 @@
 aws_region   = "eu-central-1"
-project_name = "aws-demo"
-environment  = "demo"
+environment  = "dev"
+project_name = "ade"
 ttl_minutes  = 1440  # 24 hours
-state_key    = "aws-demo/terraform.tfstate"
+state_key    = "ade/terraform.tfstate"
