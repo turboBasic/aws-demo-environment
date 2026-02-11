@@ -32,7 +32,36 @@ terraform apply
 # 2. Demo auto-destroys after 24h (or manually: terraform destroy)
 ```
 
+## AWS Authentication
+
+When executing AWS CLI commands or Terraform, use the `cargonautica` AWS profile for authentication.
+
+### Method 1: Using AWS Profile (Preferred)
+
+```bash
+# Terraform automatically uses AWS_PROFILE
+export AWS_PROFILE=cargonautica
+terraform plan
+
+# For AWS CLI commands
+aws s3 ls --profile cargonautica
+```
+
+### Method 2: Export Temporary Credentials (if needed)
+
+If explicit credentials are required, use the provided script to extract them from the cached SSO token:
+
+```bash
+source .claude/scripts/aws-sso-credentials.sh
+```
+
+See [@.claude/scripts/aws-sso-credentials.sh](.claude/scripts/aws-sso-credentials.sh) for implementation details.
+
+Note: If SSO session is expired, run `aws sso login --profile cargonautica` first.
+
 ## Terraform Commands
+
+If `terraform` is not found in PATH, look for it at `$HOME/.local/share/mise/installs/terraform/latest/terraform` and use the full path.
 
 ```bash
 terraform init          # Initialize providers and modules
@@ -51,4 +80,4 @@ Use file structure provided in @.claude/plans/04-00-aws-demo-environment-archite
 ## Conventions
 
 - Use Conventional commits standard for commit messages
-- For Terraform code use conventions provided in @.claude/plans/04-00-aws-demo-environment-architecture.md file, section "Conventions"
+- For Terraform code use conventions provided in 04-00-aws-demo-environment-architecture.md file, section "Conventions"
