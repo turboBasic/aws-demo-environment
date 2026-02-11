@@ -23,3 +23,17 @@ output "backend_config" {
     encrypt        = true
   }
 }
+
+output "bootstrap_state_bucket_name" {
+  description = "Name of the S3 bucket for backing up bootstrap terraform.tfstate"
+  value       = aws_s3_bucket.bootstrap_state.id
+}
+
+output "bootstrap_state_backup_commands" {
+  description = "Commands to backup and restore bootstrap state"
+  value = {
+    upload   = "aws s3 cp terraform.tfstate s3://${aws_s3_bucket.bootstrap_state.id}/terraform.tfstate"
+    download = "aws s3 cp s3://${aws_s3_bucket.bootstrap_state.id}/terraform.tfstate terraform.tfstate"
+    list     = "aws s3 ls s3://${aws_s3_bucket.bootstrap_state.id}/"
+  }
+}

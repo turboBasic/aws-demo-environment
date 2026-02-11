@@ -7,82 +7,7 @@ Complete guide for bootstrapping the AWS demo environment infrastructure and man
 - AWS CLI configured with appropriate credentials
 - Terraform >= 1.14 installed
 
-## Step 1: Create S3 Bucket for Bootstrap State (Optional but Recommended)
-
-The bootstrap module uses local backend by default. For better state management, create a separate S3 bucket to store the bootstrap state:
-
-```bash
-# Set variables
-BUCKET_NAME="aws-demo-bootstrap-state-$(aws sts get-caller-identity --query Account --output text)"
-AWS_REGION="eu-central-1"  # Change to your preferred region
-
-# Create the bucket
-aws s3api create-bucket \
-  --bucket "$BUCKET_NAME" \
-  --region "$AWS_REGION" \
-  --create-bucket-configuration LocationConstraint="$AWS_REGION"
-
-# Enable versioning
-aws s3api put-bucket-versioning \
-  --bucket "$BUCKET_NAME" \
-  --versioning-configuration Status=Enabled
-
-# Enable default encryption (AES256)
-aws s3api put-bucket-encryption \
-  --bucket "$BUCKET_NAME" \
-  --server-side-encryption-configuration '{
-    "Rules": [{
-      "ApplyServerSideEncryptionByDefault": {
-        "SSEAlgorithm": "AES256"
-      },
-      "BucketKeyEnabled": true
-    }]
-  }'
-
-# Block all public access
-aws s3api put-public-access-block \
-  --bucket "$BUCKET_NAME" \
-  --public-access-block-configuration \
-    BlockPublicAcls=true,\
-IgnorePublicAcls=true,\
-BlockPublicPolicy=true,\
-RestrictPublicBuckets=true
-
-# Optional: Enable lifecycle to retain old versions
-aws s3api put-bucket-lifecycle-configuration \
-  --bucket "$BUCKET_NAME" \
-  --lifecycle-configuration '{
-    "Rules": [{
-      "ID": "DeleteOldVersions",
-      "Status": "Enabled",
-      "Filter": {
-        "Prefix": ""
-      },
-      "NoncurrentVersionExpiration": {
-        "NoncurrentDays": 90
-      }
-    }]
-  }'
-
-# Verify configuration
-echo "✅ Bucket created: $BUCKET_NAME"
-aws s3api get-bucket-versioning --bucket "$BUCKET_NAME"
-aws s3api get-bucket-encryption --bucket "$BUCKET_NAME"
-aws s3api get-public-access-block --bucket "$BUCKET_NAME"
-```
-
-### One-liner version
-
-```bash
-BUCKET_NAME="aws-demo-bootstrap-state-$(aws sts get-caller-identity --query Account --output text)" && \
-aws s3api create-bucket --bucket "$BUCKET_NAME" --region us-east-1 && \
-aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --versioning-configuration Status=Enabled && \
-aws s3api put-bucket-encryption --bucket "$BUCKET_NAME" --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"},"BucketKeyEnabled":true}]}' && \
-aws s3api put-public-access-block --bucket "$BUCKET_NAME" --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true && \
-echo "✅ Bucket created: $BUCKET_NAME"
-```
-
-## Step 2: Configure Bootstrap Variables
+## Step 1: Configure Bootstrap Variables
 
 Copy the example variables file and customize:
 
@@ -98,7 +23,7 @@ aws_region  = "eu-central-1"
 ttl_minutes = 1440  # Time-to-live for demo environment (1440 minutes = 24 hours)
 ```
 
-## Step 3: Initialize and Apply Bootstrap
+## Step 2: Initialize and Apply Bootstrap
 
 ```bash
 # Initialize Terraform
@@ -113,21 +38,28 @@ terraform apply
 
 This creates:
 
-- S3 bucket for demo environment state
+- S3 bucket for demo environment state (used by root module)
+- S3 bucket for bootstrap state backup
 - DynamoDB table for state locking
 - Lambda function (destroyer) with EventBridge schedule
 - IAM roles and policies
 
-## Step 4: Back Up Bootstrap State to S3
+## Step 3: Back Up Bootstrap State to S3
 
-After successful bootstrap apply:
+After successful bootstrap apply, backup the local state file to the S3 bucket that was just created:
 
 ```bash
-# Upload state to the backup bucket
-aws s3 cp terraform.tfstate s3://$BUCKET_NAME/terraform.tfstate
+# Get the backup command from terraform output
+terraform output -raw bootstrap_state_backup_commands
+
+# Or run the upload command directly
+terraform output -json bootstrap_state_backup_commands | jq -r '.upload'
+
+# Execute the command (example)
+aws s3 cp terraform.tfstate s3://aws-demo-demo-bootstrap-state-<account-id>/terraform.tfstate
 
 # Verify upload
-aws s3 ls s3://$BUCKET_NAME/
+aws s3 ls s3://aws-demo-demo-bootstrap-state-<account-id>/
 
 # Optional: Create a timestamped backup locally
 cp terraform.tfstate terraform.tfstate.backup-$(date +%Y%m%d-%H%M%S)
@@ -135,7 +67,7 @@ cp terraform.tfstate terraform.tfstate.backup-$(date +%Y%m%d-%H%M%S)
 
 **Important:** The bootstrap state file remains in `bootstrap/terraform.tfstate` locally. The S3 copy is a backup only. Bootstrap uses local backend, not S3 backend.
 
-## Step 5: Capture Backend Configuration
+## Step 4: Capture Backend Configuration
 
 Get the backend configuration for the root module:
 
@@ -155,7 +87,7 @@ Example output:
 }
 ```
 
-## Step 6: Configure Root Module Backend
+## Step 5: Configure Root Module Backend
 
 Navigate to the root directory and edit `backend.tf`:
 
@@ -177,7 +109,7 @@ terraform {
 }
 ```
 
-## Step 7: Deploy Demo Environment
+## Step 6: Deploy Demo Environment
 
 ```bash
 # Initialize with the S3 backend
@@ -192,7 +124,7 @@ terraform apply
 
 This will create resources described in the Root Module.
 
-## Step 8: Verify Deployment
+## Step 7: Verify Deployment
 
 ```bash
 # Get the ALB DNS name
@@ -227,7 +159,16 @@ If you need to restore bootstrap state from backup:
 
 ```bash
 cd bootstrap
+
+# Get the download command from outputs (if you still have state)
+terraform output -json bootstrap_state_backup_commands | jq -r '.download'
+
+# Or use the bucket name directly
+BUCKET_NAME=$(terraform output -raw bootstrap_state_bucket_name)
 aws s3 cp s3://$BUCKET_NAME/terraform.tfstate terraform.tfstate
+
+# Or if you know the bucket name
+aws s3 cp s3://aws-demo-demo-bootstrap-state-<account-id>/terraform.tfstate terraform.tfstate
 
 # Verify state
 terraform show
@@ -253,12 +194,9 @@ This destroys VPC, ALB, EC2, but leaves bootstrap infrastructure intact.
 cd aws-demo-environment
 terraform destroy
 
-# Then destroy bootstrap
+# Then destroy bootstrap (includes the bootstrap state bucket)
 cd bootstrap
 terraform destroy
-
-# Optionally, delete the bootstrap state backup bucket
-aws s3 rb s3://$BUCKET_NAME --force
 ```
 
 ## Troubleshooting
@@ -289,11 +227,16 @@ If you lose local bootstrap state but resources exist:
 
 ```bash
 # Option 1: Restore from S3 backup
-aws s3 cp s3://$BUCKET_NAME/terraform.tfstate bootstrap/terraform.tfstate
+cd bootstrap
+BUCKET_NAME="aws-demo-demo-bootstrap-state-<account-id>"  # Replace with your account ID
+aws s3 cp s3://$BUCKET_NAME/terraform.tfstate terraform.tfstate
 
 # Option 2: Import resources manually
-terraform import aws_s3_bucket.tfstate aws-demo-tfstate-<account-id>-<region>
-# ... repeat for other resources
+terraform import aws_s3_bucket.terraform_state aws-demo-demo-tfstate-<account-id>
+terraform import aws_s3_bucket.bootstrap_state aws-demo-demo-bootstrap-state-<account-id>
+terraform import aws_dynamodb_table.terraform_locks aws-demo-demo-tfstate-locks
+terraform import aws_lambda_function.destroyer aws-demo-demo-destroyer
+# ... repeat for other resources as needed
 ```
 
 ## Security Notes
