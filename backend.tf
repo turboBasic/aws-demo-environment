@@ -1,12 +1,12 @@
 # S3 remote state backend. Fill in values from bootstrap outputs:
-#   terraform output -json backend_config
+# cd backup && terraform output -json backend_config
 
 terraform {
   backend "s3" {
-    bucket         = "aws-demo-demo-tfstate-381492075850"
-    key            = "aws-demo/terraform.tfstate"
+    bucket         = "ade-dev-tfstate-381492075850"
+    key            = "ade/terraform.tfstate"
     region         = "eu-central-1"
-    dynamodb_table = "aws-demo-demo-tflock"
+    dynamodb_table = "ade-dev-tflock"
     encrypt        = true
   }
 }
