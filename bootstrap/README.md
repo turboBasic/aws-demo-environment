@@ -56,13 +56,10 @@ terraform output -raw bootstrap_state_backup_commands
 terraform output -json bootstrap_state_backup_commands | jq -r '.upload'
 
 # Execute the command (example)
-aws s3 cp terraform.tfstate s3://aws-demo-demo-bootstrap-state-<account-id>/terraform.tfstate
+aws s3 cp terraform.tfstate s3://ade-dev-bootstrap-tfstate-<account-id>/terraform.tfstate
 
 # Verify upload
-aws s3 ls s3://aws-demo-demo-bootstrap-state-<account-id>/
-
-# Optional: Create a timestamped backup locally
-cp terraform.tfstate terraform.tfstate.backup-$(date +%Y%m%d-%H%M%S)
+aws s3 ls s3://ade-dev-bootstrap-tfstate-<account-id>/
 ```
 
 **Important:** The bootstrap state file remains in `bootstrap/terraform.tfstate` locally. The S3 copy is a backup only. Bootstrap uses local backend, not S3 backend.
@@ -79,10 +76,10 @@ Example output:
 
 ```json
 {
-  "bucket": "aws-demo-tfstate-123456789012-us-east-1",
-  "dynamodb_table": "aws-demo-tfstate-locks",
+  "bucket": "ade-dev-tfstate-123456789012",
+  "dynamodb_table": "ade-dev-tflock",
   "encrypt": true,
-  "key": "demo-environment/terraform.tfstate",
+  "key": "ade/terraform.tfstate",
   "region": "eu-central-1"
 }
 ```
@@ -100,10 +97,10 @@ Edit [backend.tf](../backend.tf) with values from bootstrap output:
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "aws-demo-tfstate-123456789012-eu-central-1"  # From output
-    key            = "demo-environment/terraform.tfstate"
-    region         = "eu-central-1"  # From output
-    dynamodb_table = "aws-demo-tfstate-locks"  # From output
+    bucket         = "ade-dev-tfstate-123456789012"   # From output of previous step
+    key            = "ade/terraform.tfstate"          # From output of previous step
+    region         = "eu-central-1"                   # From output of previous step
+    dynamodb_table = "ade-dev-tflock"                 # From output of previous step
     encrypt        = true
   }
 }
@@ -141,7 +138,7 @@ Expected response: Demo HTML page from EC2 instance.
 ### Bootstrap State (Local Backend)
 
 - **Location:** `bootstrap/terraform.tfstate` (local file)
-- **Backup:** S3 bucket `aws-demo-bootstrap-state-<account-id>`
+- **Backup:** S3 bucket `ade-dev-bootstrap-tfstate-<account-id>`
 - **Managed:** Manually (rarely changes)
 - **Purpose:** Persistent infrastructure (state backend, Lambda, etc.)
 
@@ -168,7 +165,7 @@ BUCKET_NAME=$(terraform output -raw bootstrap_state_bucket_name)
 aws s3 cp s3://$BUCKET_NAME/terraform.tfstate terraform.tfstate
 
 # Or if you know the bucket name
-aws s3 cp s3://aws-demo-demo-bootstrap-state-<account-id>/terraform.tfstate terraform.tfstate
+aws s3 cp s3://ade-dev-bootstrap-tfstate-<account-id>/terraform.tfstate terraform.tfstate
 
 # Verify state
 terraform show
@@ -190,7 +187,7 @@ This destroys VPC, ALB, EC2, but leaves bootstrap infrastructure intact.
 **Warning:** This destroys the state backend and Lambda destroyer. Only do this when completely done with the project.
 
 ```bash
-# First, destroy demo environment if it exists
+# First, destroy main environment if it exists
 cd aws-demo-environment
 terraform destroy
 
@@ -215,7 +212,7 @@ If state is locked from a failed operation:
 
 ```bash
 # List locks
-aws dynamodb scan --table-name aws-demo-tfstate-locks
+aws dynamodb scan --table-name ade-dev-tflock
 
 # Force unlock (use Lock ID from error message)
 terraform force-unlock <lock-id>
@@ -228,13 +225,13 @@ If you lose local bootstrap state but resources exist:
 ```bash
 # Option 1: Restore from S3 backup
 cd bootstrap
-BUCKET_NAME="aws-demo-demo-bootstrap-state-<account-id>"  # Replace with your account ID
+BUCKET_NAME="ade-dev-bootstrap-tfstate-<account-id>"  # Replace with your account ID
 aws s3 cp s3://$BUCKET_NAME/terraform.tfstate terraform.tfstate
 
 # Option 2: Import resources manually
-terraform import aws_s3_bucket.terraform_state aws-demo-demo-tfstate-<account-id>
-terraform import aws_s3_bucket.bootstrap_state aws-demo-demo-bootstrap-state-<account-id>
-terraform import aws_dynamodb_table.terraform_locks aws-demo-demo-tfstate-locks
+terraform import aws_s3_bucket.terraform_state ade-dev-tfstate-<account-id>
+terraform import aws_s3_bucket.bootstrap_state ade-dev-bootstrap-tfstate-<account-id>
+terraform import aws_dynamodb_table.terraform_locks ade-dev-tflock
 terraform import aws_lambda_function.destroyer aws-demo-demo-destroyer
 # ... repeat for other resources as needed
 ```
