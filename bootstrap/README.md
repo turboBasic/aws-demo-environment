@@ -19,8 +19,10 @@ cp terraform.tfvars.example terraform.tfvars
 Edit `terraform.tfvars` with your values:
 
 ```hcl
-aws_region  = "eu-central-1"
-ttl_minutes = 1440  # Time-to-live for demo environment (1440 minutes = 24 hours)
+environment  = "dev"
+project_name = "ade"
+aws_region   = "eu-central-1"
+ttl_minutes  = 1440  # Time-to-live for demo environment (1440 minutes = 24 hours)
 ```
 
 ## Step 2: Initialize and Apply Bootstrap

@@ -2,23 +2,23 @@
 
 ## Context
 
-Build a complete, production-quality Terraform configuration that deploys an ephemeral 1-day AWS demo environment (VPC, ALB, EC2) with automated cleanup via a Lambda container that runs `terraform destroy` after 24h. Two-stage architecture: persistent `bootstrap/` resources (state backend, Lambda, EventBridge) and ephemeral root module resources (networking, compute).
+Build a complete, production-quality Terraform configuration that deploys an ephemeral 1-day AWS demo environment (VPC, ALB, EC2) with automated cleanup via a Lambda function that removes expensive resources after 24h using native AWS API calls. Two-stage architecture: persistent `bootstrap/` resources (state backend, Lambda, EventBridge) and ephemeral root module resources (networking, compute).
 
 ## Architecture
 
 ```text
-┌────────────────────────────────────────────────────────┐
-│  bootstrap/ (persistent, apply once)                   │
-│  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌─────────┐  │
-│  │ S3 State │ │ DynamoDB │ │  Secrets   │ │  ECR    │  │
-│  │  Bucket  │ │  Locks   │ │  Manager   │ │  Repo   │  │
-│  └──────────┘ └──────────┘ └────────────┘ └─────────┘  │
-│  ┌──────────────────────┐  ┌────────────────────────┐  │
-│  │  Lambda Destroyer    │  │  EventBridge (hourly)  │  │
-│  │  (container image)   │◄─│  schedule rule         │  │
-│  └──────────────────────┘  └────────────────────────┘  │
-└────────────────────────────────────────────────────────┘
-         │ terraform destroy -auto-approve
+┌─────────────────────────────────────────────────┐
+│  bootstrap/ (persistent, apply once)            │
+│  ┌──────────┐ ┌──────────┐                       │
+│  │ S3 State │ │ DynamoDB │                       │
+│  │  Bucket  │ │  Locks   │                       │
+│  └──────────┘ └──────────┘                       │
+│  ┌──────────────────────┐  ┌─────────────────┐  │
+│  │  Lambda Destroyer    │  │  EventBridge    │  │
+│  │   (Python + boto3)   │◄─│  schedule rule  │  │
+│  └──────────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────┘
+         │ deletes tagged resources via AWS APIs
          ▼
 ┌─────────────────────────────────────────────────┐
 │  root / (ephemeral demo, one terraform apply)   │
@@ -60,21 +60,20 @@ aws-demo-environment/
 ├── scripts/user_data.sh     # httpd install + demo HTML
 ├── terraform.tfvars.example # Example variable values
 ├── CLAUDE.md                # Project documentation
-│
 └── bootstrap/
-    ├── main.tf              # Provider config (local backend)
-    ├── variables.tf         # region, github_repo, token, ttl
-    ├── outputs.tf           # bucket, table, ECR URL, backend_config
-    ├── locals.tf            # name_prefix, tags, data sources
-    ├── state.tf             # S3 bucket + DynamoDB table
-    ├── secrets.tf           # Secrets Manager (GitHub token)
-    ├── ecr.tf               # ECR repo + lifecycle policy
-    ├── lambda.tf            # Lambda, IAM, EventBridge, Docker build
-    ├── terraform.tfvars.example
-    └── lambda-destroyer/
-        ├── Dockerfile       # python:3.12 + terraform + git
-        ├── handler.py       # TTL check + terraform destroy logic
-        └── requirements.txt # boto3
+    ├── bootstrap-state-bucket.tf   # S3 bucket for manual backing up of bootsrap's Terraform state
+    ├── main.tf                     # Provider config (local backend)
+    ├── variables.tf                # region, github_repo, token, ttl
+    ├── outputs.tf                  # bucket, table, ECR URL, backend_config
+    ├── locals.tf                   # name_prefix, tags, data sources
+    ├── state.tf                    # S3 bucket + DynamoDB table
+    ├── secrets.tf                  # Secrets Manager (GitHub token)
+    ├── ecr.tf                      # ECR repo + lifecycle policy
+    ├── lambda.tf                   # Lambda, IAM, EventBridge
+    ├── terraform.tfvars.example.   # Example variable values
+    └── lambda-destroyer/           # Code of Lambda
+        ├── handler.py              # TTL check + remove expensive resources
+        └── requirements.txt        # boto3
 ```
 
 ## Implementation Plans
@@ -82,8 +81,8 @@ aws-demo-environment/
 Detailed implementation steps are in the individual plan files:
 
 - [04-01-implement-root-module.md](04-01-implement-root-module.md) — VPC, networking, security groups, ALB, EC2
-- [04-02-implement-bootstrap-module.md](04-02-implement-bootstrap-module.md) — State backend, Secrets, ECR, Lambda, EventBridge
-- [04-03-implement-lambda-destroyer.md](04-03-implement-lambda-destroyer.md) — Lambda container image (Dockerfile, handler, requirements)
+- [04-02-implement-bootstrap-module.md](04-02-implement-bootstrap-module.md) — State backend, Secrets, Lambda, EventBridge
+- [04-03-implement-lambda-destroyer.md](04-03-implement-lambda-destroyer.md) — Code of Lambda function (handler, requirements)
 
 After implementation steps, commit files.
 
@@ -92,16 +91,15 @@ After implementation steps, commit files.
 1. **Two-stage architecture** — Bootstrap creates persistent infra (state, Lambda), root creates ephemeral demo. Lambda destroys only root state.
 2. **ALB needs 2 AZs** — AWS requires ALB subnets in >=2 AZs. Two public subnets but only 1 private subnet (cost savings: single NAT GW).
 3. **TTL via S3 LastModified** — Lambda checks state file age. Each `terraform apply` resets the timer. Simple, no extra infra.
-4. **Lambda container** — Terraform CLI + Git in container image. 15-min timeout, 512MB memory. Destroy typically takes 3-7 min.
+4. **Lambda container** — Python with boto3. 15-min timeout, 256MB memory. Destroy typically takes 2-3 min.
 5. **Standalone SG rules** — Using `aws_vpc_security_group_ingress_rule` (provider 6.x best practice, avoids rule conflicts).
 6. **NAT Gateway over NAT instance** — Simpler, managed. Dominates cost (~$1.15/day) but acceptable for demo.
-7. **No VPC access for Lambda** — Lambda runs outside VPC. It clones the repo and runs `terraform destroy` which internally calls AWS APIs via the Lambda's IAM execution role credentials. Lambda does NOT make direct boto3 calls to delete resources.
-8. **GitHub repo** — Hardcoded default: `turboBasic/aws-demo-environment`. Lambda clones it, runs `terraform init` with `-backend-config` flags, then `terraform destroy -auto-approve`.
+7. **No VPC access for Lambda** — Lambda runs outside VPC. It calls AWS APIs via the Lambda's IAM execution role credentials.
 
 ## Conventions
 
 - **Variable naming**: snake_case, descriptive names with `description` and `type` set
 - **File organization**: Group related resources into dedicated .tf files (e.g. `network.tf`, `compute.tf`)
 - **Formatting**: Always run `terraform fmt` before committing
-- **Tagging**: All resources should include `Environment` and `Project` tags using `var.environment` and `var.project_name`
+- **Tagging**: All resources should be tagged (see `common_tags` in @/locals.tf and in @/bootstrap/locals.tf)
 - **Security groups**: Use standalone `aws_vpc_security_group_ingress_rule` / `aws_vpc_security_group_egress_rule` (provider 6.x best practice)

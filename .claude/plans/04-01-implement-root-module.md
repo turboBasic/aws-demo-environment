@@ -4,9 +4,11 @@
 
 Create the Terraform resources for the ephemeral demo environment: VPC networking, security groups, ALB, and EC2 instance.
 
+For architecture context, see [04-00-aws-demo-environment-architecture.md](04-00-aws-demo-environment-architecture.md).
+
 ## Steps
 
-- [x] Create `locals.tf` — `name_prefix`, `common_tags` (Environment, Project, ManagedBy, TTL=24h), CIDR constants
+- [x] Create `locals.tf` — `name_prefix`, `common_tags` (Environment, Project, ManagedBy, AutoDestroy=true), CIDR constants
 - [x] Create `data.tf` — `aws_availability_zones`, `aws_ami` (AL2023 x86_64), `aws_caller_identity`, `aws_region`
 - [x] Create `network.tf` — VPC 10.0.0.0/16, IGW, 2 public subnets (AZ[0], AZ[1]), 1 private subnet, NAT GW + EIP, public/private route tables, 3 route table associations
 - [x] Create `endpoints.tf` — S3 gateway VPC endpoint on private route table
@@ -17,9 +19,9 @@ Create the Terraform resources for the ephemeral demo environment: VPC networkin
 - [x] Update `outputs.tf` — `alb_dns_name`, `ec2_instance_id`, `vpc_id`
 - [x] Update `backend.tf` — S3 backend block with placeholder values from bootstrap outputs
 - [x] Update `terraform.tfvars.example` — Add new variables
-- [x] Run `terraform fmt -recursive` — Fixed alignment in `endpoints.tf`, `locals.tf`
+- [x] Run `terraform fmt -recursive` — Fixed alignment in files
 - [x] Run `terraform fmt -check -recursive` — Passed
 - [x] Run `terraform init -backend=false` — Passed (installed aws provider 6.31.0)
-- [x] Run `terraform validate` — Pending
+- [x] Run `terraform validate` — Passed
 
 ## Status: Completed
