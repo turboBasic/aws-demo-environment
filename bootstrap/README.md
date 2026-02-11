@@ -6,22 +6,6 @@ Complete guide for bootstrapping the AWS demo environment infrastructure and man
 
 - AWS CLI configured with appropriate credentials
 - Terraform >= 1.14 installed
-- Docker with buildx support (for building Lambda container images)
-- Git repository cloned locally
-
-### Setup Docker Buildx
-
-The Lambda destroyer container requires a proper buildx builder to create Lambda-compatible images:
-
-```bash
-# Create a buildx builder with docker-container driver (required for Lambda compatibility)
-docker buildx create --name lambda-builder --driver docker-container --use
-
-# Verify the builder is created
-docker buildx ls
-```
-
-**Why this is needed:** The default Docker builder doesn't create OCI-compliant manifests that AWS Lambda accepts. The `docker-container` driver creates proper multi-platform images without attestation manifests.
 
 ## Step 1: Create S3 Bucket for Bootstrap State (Optional but Recommended)
 
@@ -111,12 +95,8 @@ Edit `terraform.tfvars` with your values:
 
 ```hcl
 aws_region  = "eu-central-1"
-github_repo = "turboBasic/aws-demo-environment"  # Your GitHub repo
-github_token = "ghp_xxxxxxxxxxxx"  # GitHub PAT for Lambda to clone repo
-ttl_hours   = 24  # Time-to-live for demo environment
+ttl_minutes = 1440  # Time-to-live for demo environment (1440 minutes = 24 hours)
 ```
-
-**Note:** The `github_token` is stored in AWS Secrets Manager for the Lambda destroyer to use.
 
 ## Step 3: Initialize and Apply Bootstrap
 
@@ -135,8 +115,6 @@ This creates:
 
 - S3 bucket for demo environment state
 - DynamoDB table for state locking
-- Secrets Manager secret for GitHub token
-- ECR repository for Lambda container image
 - Lambda function (destroyer) with EventBridge schedule
 - IAM roles and policies
 
@@ -190,9 +168,9 @@ Edit [backend.tf](../backend.tf) with values from bootstrap output:
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "aws-demo-tfstate-123456789012-us-east-1"  # From output
+    bucket         = "aws-demo-tfstate-123456789012-eu-central-1"  # From output
     key            = "demo-environment/terraform.tfstate"
-    region         = "us-east-1"  # From output
+    region         = "eu-central-1"  # From output
     dynamodb_table = "aws-demo-tfstate-locks"  # From output
     encrypt        = true
   }
@@ -212,14 +190,7 @@ terraform plan
 terraform apply
 ```
 
-This creates:
-
-- VPC with public/private subnets across 2 AZs
-- Internet Gateway and NAT Gateway
-- Application Load Balancer (public)
-- EC2 instance (private subnet)
-- Security groups and routing
-- S3 Gateway VPC endpoint
+This will create resources described in the Root Module.
 
 ## Step 8: Verify Deployment
 
@@ -279,7 +250,7 @@ This destroys VPC, ALB, EC2, but leaves bootstrap infrastructure intact.
 
 ```bash
 # First, destroy demo environment if it exists
-cd /Users/aamelnyk/projects/personal/turboBasic/aws-demo-environment
+cd aws-demo-environment
 terraform destroy
 
 # Then destroy bootstrap
@@ -329,7 +300,6 @@ terraform import aws_s3_bucket.tfstate aws-demo-tfstate-<account-id>-<region>
 
 - Bootstrap state file contains sensitive data (resource IDs, configs)
 - Never commit `terraform.tfstate` to git (already in `.gitignore`)
-- GitHub token is stored in AWS Secrets Manager, not in state
 - S3 state bucket has encryption and versioning enabled
 - Bootstrap state backup bucket blocks all public access
 

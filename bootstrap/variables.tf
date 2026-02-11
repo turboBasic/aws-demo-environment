@@ -16,22 +16,10 @@ variable "environment" {
   default     = "demo"
 }
 
-variable "github_repo" {
-  description = "GitHub repository URL for the demo environment"
-  type        = string
-  default     = "https://github.com/turboBasic/aws-demo-environment.git"
-}
-
-variable "github_token" {
-  description = "GitHub personal access token for cloning the repository"
-  type        = string
-  sensitive   = true
-}
-
-variable "ttl_hours" {
-  description = "Number of hours before the demo environment is automatically destroyed"
+variable "ttl_minutes" {
+  description = "Number of minutes before the demo environment is automatically destroyed"
   type        = number
-  default     = 24
+  default     = 1440 # 24 hours
 }
 
 variable "state_key" {

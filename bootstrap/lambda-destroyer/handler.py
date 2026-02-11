@@ -1,40 +1,37 @@
-"""Lambda handler that checks Terraform state age and destroys expired demo environments."""
+"""Lambda handler that checks Terraform state age and destroys expensive tagged resources."""
 
-import json
 import logging
 import os
-import subprocess
-import tempfile
+import time
 from datetime import datetime, timezone
 
 import boto3
+from botocore.exceptions import ClientError, WaiterError
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Environment variables
-GITHUB_REPO = os.environ["GITHUB_REPO"]
-SECRET_ARN = os.environ["SECRET_ARN"]
 STATE_BUCKET = os.environ["STATE_BUCKET"]
 STATE_KEY = os.environ["STATE_KEY"]
 STATE_REGION = os.environ["STATE_REGION"]
-DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
-TTL_HOURS = int(os.environ["TTL_HOURS"])
+TTL_MINUTES = int(os.environ["TTL_MINUTES"])
+
+# Tag used to discover resources for auto-destruction
+AUTO_DESTROY_TAG_KEY = "AutoDestroy"
+AUTO_DESTROY_TAG_VALUE = "true"
+
+# NAT Gateway deletion polling
+NAT_GW_POLL_INTERVAL = 10  # seconds
+NAT_GW_POLL_TIMEOUT = 300  # 5 minutes
 
 
-def get_github_token() -> str:
-    """Retrieve GitHub token from Secrets Manager."""
-    client = boto3.client("secretsmanager", region_name=STATE_REGION)
-    response = client.get_secret_value(SecretId=SECRET_ARN)
-    return response["SecretString"]
-
-
-def get_state_age_hours() -> float | None:
+def get_state_age_minutes() -> float | None:
     """Check the age of the Terraform state file in S3. Returns None if no state exists."""
     s3 = boto3.client("s3", region_name=STATE_REGION)
     try:
         response = s3.head_object(Bucket=STATE_BUCKET, Key=STATE_KEY)
-    except s3.exceptions.ClientError as e:
+    except ClientError as e:
         if e.response["Error"]["Code"] == "404":
             logger.info("No state file found at s3://%s/%s", STATE_BUCKET, STATE_KEY)
             return None
@@ -42,96 +39,352 @@ def get_state_age_hours() -> float | None:
 
     last_modified = response["LastModified"]
     age = datetime.now(timezone.utc) - last_modified
-    age_hours = age.total_seconds() / 3600
+    age_minutes = age.total_seconds() / 60
     logger.info(
-        "State file last modified: %s (%.1f hours ago)", last_modified.isoformat(), age_hours
+        "State file last modified: %s (%.1f minutes ago)",
+        last_modified.isoformat(),
+        age_minutes,
     )
-    return age_hours
+    return age_minutes
 
 
-def state_has_resources() -> bool:
-    """Check if the Terraform state file contains any managed resources."""
-    s3 = boto3.client("s3", region_name=STATE_REGION)
+def discover_tagged_resources() -> dict[str, list[str]]:
+    """Discover all resources tagged with AutoDestroy=true.
+
+    Uses the Resource Groups Tagging API to find resources, then classifies
+    them by type. Returns a dict mapping resource type to list of ARNs.
+    """
+    client = boto3.client("resourcegroupstaggingapi", region_name=STATE_REGION)
+    resources_by_type: dict[str, list[str]] = {}
+
+    paginator = client.get_paginator("get_resources")
+    for page in paginator.paginate(
+        TagFilters=[{"Key": AUTO_DESTROY_TAG_KEY, "Values": [AUTO_DESTROY_TAG_VALUE]}],
+    ):
+        for resource in page["ResourceTagMappingList"]:
+            arn = resource["ResourceARN"]
+            resource_type = _classify_resource(arn)
+            if resource_type:
+                resources_by_type.setdefault(resource_type, []).append(arn)
+                logger.info("Discovered %s: %s", resource_type, arn)
+            else:
+                logger.warning("Unknown resource type for ARN: %s", arn)
+
+    total = sum(len(v) for v in resources_by_type.values())
+    logger.info("Discovered %d tagged resources across %d types", total, len(resources_by_type))
+    return resources_by_type
+
+
+def _classify_resource(arn: str) -> str | None:
+    """Classify an ARN into a known resource type.
+
+    ARN examples:
+      arn:aws:elasticloadbalancing:region:account:loadbalancer/app/name/id
+      arn:aws:elasticloadbalancing:region:account:targetgroup/name/id
+      arn:aws:ec2:region:account:instance/i-xxxxx
+      arn:aws:ec2:region:account:natgateway/nat-xxxxx
+      arn:aws:ec2:region:account:elastic-ip/eipalloc-xxxxx
+    """
+    parts = arn.split(":")
+    if len(parts) < 6:
+        return None
+
+    service = parts[2]
+    resource_part = parts[5]
+
+    if service == "elasticloadbalancing":
+        if resource_part.startswith("loadbalancer/"):
+            return "elasticloadbalancing:loadbalancer"
+        if resource_part.startswith("targetgroup/"):
+            return "elasticloadbalancing:targetgroup"
+    elif service == "ec2":
+        if resource_part.startswith("instance/"):
+            return "ec2:instance"
+        if resource_part.startswith("natgateway/"):
+            return "ec2:natgateway"
+        if resource_part.startswith("elastic-ip/"):
+            return "ec2:elastic-ip"
+
+    return None
+
+
+def _extract_id_from_arn(arn: str) -> str:
+    """Extract the resource ID from the last segment of an ARN."""
+    return arn.rsplit("/", 1)[-1]
+
+
+def delete_load_balancers(arns: list[str]) -> None:
+    """Delete ALBs and wait for deletion. Listeners are auto-deleted with the ALB."""
+    client = boto3.client("elbv2", region_name=STATE_REGION)
+    active_arns = []
+    for arn in arns:
+        try:
+            logger.info("Deleting load balancer: %s", arn)
+            client.delete_load_balancer(LoadBalancerArn=arn)
+            active_arns.append(arn)
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "LoadBalancerNotFound":
+                logger.info("Load balancer %s already deleted", arn)
+            else:
+                logger.error("Failed to delete load balancer %s: %s", arn, e)
+
+    if not active_arns:
+        logger.info("All load balancers already deleted")
+        return
+
+    waiter = client.get_waiter("load_balancers_deleted")
     try:
-        response = s3.get_object(Bucket=STATE_BUCKET, Key=STATE_KEY)
-        state = json.loads(response["Body"].read())
-    except Exception:
-        logger.exception("Failed to read state file")
-        return False
-
-    resources = state.get("resources", [])
-    managed = [r for r in resources if r.get("mode") == "managed"]
-    logger.info("State contains %d managed resources", len(managed))
-    return len(managed) > 0
+        logger.info("Waiting for %d load balancer(s) to be deleted...", len(active_arns))
+        waiter.wait(
+            LoadBalancerArns=active_arns,
+            WaiterConfig={"Delay": 15, "MaxAttempts": 20},
+        )
+        logger.info("All load balancers deleted")
+    except WaiterError as e:
+        logger.error("Timed out waiting for load balancer deletion: %s", e)
 
 
-def run_terraform_destroy(work_dir: str) -> None:
-    """Run terraform init and destroy in the given directory."""
-    backend_config = [
-        f"-backend-config=bucket={STATE_BUCKET}",
-        f"-backend-config=key={STATE_KEY}",
-        f"-backend-config=region={STATE_REGION}",
-        f"-backend-config=dynamodb_table={DYNAMODB_TABLE}",
-        "-backend-config=encrypt=true",
-    ]
+def delete_target_groups(arns: list[str]) -> None:
+    """Delete target groups. Must be called after ALBs are deleted.
 
-    # terraform init
-    init_cmd = ["terraform", "init", "-input=false"] + backend_config
-    logger.info("Running: %s", " ".join(init_cmd))
-    result = subprocess.run(init_cmd, cwd=work_dir, capture_output=True, text=True, timeout=300)
-    logger.info("Init stdout: %s", result.stdout)
-    if result.returncode != 0:
-        logger.error("Init stderr: %s", result.stderr)
-        raise RuntimeError(f"terraform init failed with exit code {result.returncode}")
+    Retries deletion if target group is still in use by a listener, as there can
+    be a brief delay between ALB deletion and listener cleanup completing.
+    """
+    client = boto3.client("elbv2", region_name=STATE_REGION)
+    max_retries = 5
+    retry_delay = 10  # seconds
 
-    # terraform destroy
-    destroy_cmd = ["terraform", "destroy", "-auto-approve", "-input=false"]
-    logger.info("Running: %s", " ".join(destroy_cmd))
-    result = subprocess.run(
-        destroy_cmd, cwd=work_dir, capture_output=True, text=True, timeout=600
-    )
-    logger.info("Destroy stdout: %s", result.stdout)
-    if result.returncode != 0:
-        logger.error("Destroy stderr: %s", result.stderr)
-        raise RuntimeError(f"terraform destroy failed with exit code {result.returncode}")
+    for arn in arns:
+        for attempt in range(max_retries):
+            try:
+                logger.info("Deleting target group: %s (attempt %d/%d)", arn, attempt + 1, max_retries)
+                client.delete_target_group(TargetGroupArn=arn)
+                logger.info("Target group deleted: %s", arn)
+                break  # Success, exit retry loop
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code")
+                if error_code == "TargetGroupNotFound":
+                    logger.info("Target group %s already deleted", arn)
+                    break  # Already gone, success
+                elif error_code == "ResourceInUse" and attempt < max_retries - 1:
+                    logger.warning(
+                        "Target group %s still in use (listener cleanup pending), "
+                        "retrying in %ds... (attempt %d/%d)",
+                        arn, retry_delay, attempt + 1, max_retries
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    logger.error("Failed to delete target group %s: %s", arn, e)
+                    break  # Give up after max retries or non-retryable error
 
-    logger.info("Terraform destroy completed successfully")
+
+def terminate_instances(arns: list[str]) -> None:
+    """Terminate EC2 instances and wait for termination."""
+    ec2 = boto3.client("ec2", region_name=STATE_REGION)
+    instance_ids = [_extract_id_from_arn(arn) for arn in arns]
+
+    # Filter out instances that no longer exist
+    try:
+        response = ec2.describe_instances(InstanceIds=instance_ids)
+        existing_ids = []
+        for reservation in response["Reservations"]:
+            for instance in reservation["Instances"]:
+                existing_ids.append(instance["InstanceId"])
+
+        missing_ids = set(instance_ids) - set(existing_ids)
+        if missing_ids:
+            logger.info("Instances already deleted: %s", list(missing_ids))
+
+        if not existing_ids:
+            logger.info("All instances already terminated")
+            return
+
+        instance_ids = existing_ids
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code")
+        if error_code == "InvalidInstanceID.NotFound":
+            logger.info("All instances already deleted")
+            return
+        logger.error("Failed to describe instances: %s", e)
+        return
+
+    try:
+        logger.info("Terminating instances: %s", instance_ids)
+        ec2.terminate_instances(InstanceIds=instance_ids)
+    except ClientError as e:
+        logger.error("Failed to terminate instances %s: %s", instance_ids, e)
+        return
+
+    waiter = ec2.get_waiter("instance_terminated")
+    try:
+        logger.info("Waiting for %d instance(s) to terminate...", len(instance_ids))
+        waiter.wait(
+            InstanceIds=instance_ids,
+            WaiterConfig={"Delay": 15, "MaxAttempts": 40},
+        )
+        logger.info("All instances terminated")
+    except WaiterError as e:
+        logger.error("Timed out waiting for instance termination: %s", e)
+
+
+def delete_nat_gateways(arns: list[str]) -> None:
+    """Delete NAT Gateways and poll until deleted.
+
+    No built-in waiter exists, so we poll describe_nat_gateways manually.
+    """
+    ec2 = boto3.client("ec2", region_name=STATE_REGION)
+    nat_gw_ids = [_extract_id_from_arn(arn) for arn in arns]
+
+    # Delete each NAT Gateway, skipping ones that don't exist
+    active_nat_gw_ids = []
+    for nat_gw_id in nat_gw_ids:
+        try:
+            logger.info("Deleting NAT gateway: %s", nat_gw_id)
+            ec2.delete_nat_gateway(NatGatewayId=nat_gw_id)
+            active_nat_gw_ids.append(nat_gw_id)
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "NatGatewayNotFound":
+                logger.info("NAT gateway %s already deleted", nat_gw_id)
+            else:
+                logger.error("Failed to delete NAT gateway %s: %s", nat_gw_id, e)
+
+    if not active_nat_gw_ids:
+        logger.info("All NAT gateways already deleted")
+        return
+
+    # Poll for deletion status
+    start_time = time.time()
+    while time.time() - start_time < NAT_GW_POLL_TIMEOUT:
+        try:
+            response = ec2.describe_nat_gateways(NatGatewayIds=active_nat_gw_ids)
+            states = {gw["NatGatewayId"]: gw["State"] for gw in response["NatGateways"]}
+            logger.info("NAT Gateway states: %s", states)
+
+            if all(state == "deleted" for state in states.values()):
+                logger.info("All NAT gateways deleted")
+                return
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "NatGatewayNotFound":
+                # All NAT gateways are gone, which is the desired state
+                logger.info("All NAT gateways confirmed deleted")
+                return
+            logger.error("Error checking NAT gateway status: %s", e)
+
+        time.sleep(NAT_GW_POLL_INTERVAL)
+
+    logger.error("Timed out waiting for NAT gateway deletion after %ds", NAT_GW_POLL_TIMEOUT)
+
+
+def release_elastic_ips(arns: list[str]) -> None:
+    """Release Elastic IPs. Must be called after NAT Gateways are fully deleted.
+
+    Retries release if EIP is still associated (AuthFailure), as there can be
+    a brief delay between NAT Gateway deletion and EIP disassociation completing.
+    """
+    ec2 = boto3.client("ec2", region_name=STATE_REGION)
+    max_retries = 5
+    retry_delay = 10  # seconds
+
+    for arn in arns:
+        allocation_id = _extract_id_from_arn(arn)
+        for attempt in range(max_retries):
+            try:
+                logger.info("Releasing Elastic IP: %s (attempt %d/%d)", allocation_id, attempt + 1, max_retries)
+                ec2.release_address(AllocationId=allocation_id)
+                logger.info("Elastic IP released: %s", allocation_id)
+                break  # Success, exit retry loop
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code")
+                if error_code == "InvalidAllocationID.NotFound":
+                    logger.info("Elastic IP %s already released", allocation_id)
+                    break  # Already gone, success
+                elif error_code == "AuthFailure" and attempt < max_retries - 1:
+                    logger.warning(
+                        "Elastic IP %s still associated (NAT GW disassociation pending), "
+                        "retrying in %ds... (attempt %d/%d)",
+                        allocation_id, retry_delay, attempt + 1, max_retries
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    logger.error("Failed to release Elastic IP %s: %s", allocation_id, e)
+                    break  # Give up after max retries or non-retryable error
 
 
 def lambda_handler(event, context):
-    """Main Lambda handler. Checks state age and destroys if TTL exceeded."""
-    logger.info("Destroyer invoked. TTL_HOURS=%d", TTL_HOURS)
+    """Main handler. Checks state age and destroys expensive tagged resources."""
+    logger.info("Destroyer invoked. TTL_MINUTES=%d", TTL_MINUTES)
 
-    age_hours = get_state_age_hours()
-    if age_hours is None:
-        logger.info("No state file found — nothing to destroy")
+    # Step 1: Check TTL via state file age
+    age_minutes = get_state_age_minutes()
+    if age_minutes is None:
+        logger.info("No state file found -- nothing to destroy")
         return {"status": "skip", "reason": "no_state_file"}
 
-    if age_hours < TTL_HOURS:
-        logger.info("State is %.1f hours old, TTL is %d hours — not yet expired", age_hours, TTL_HOURS)
-        return {"status": "skip", "reason": "not_expired", "age_hours": age_hours}
-
-    if not state_has_resources():
-        logger.info("State file exists but has no managed resources — nothing to destroy")
-        return {"status": "skip", "reason": "no_resources"}
-
-    logger.info("State is %.1f hours old (TTL=%d) — proceeding with destroy", age_hours, TTL_HOURS)
-
-    # Clone the repository
-    token = get_github_token()
-    repo_url = GITHUB_REPO.replace("https://", f"https://x-access-token:{token}@")
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        logger.info("Cloning repository into %s", tmp_dir)
-        subprocess.run(
-            ["git", "clone", "--depth", "1", repo_url, tmp_dir],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=120,
+    if age_minutes < TTL_MINUTES:
+        logger.info(
+            "State is %.1f minutes old, TTL is %d minutes -- not yet expired",
+            age_minutes,
+            TTL_MINUTES,
         )
+        return {"status": "skip", "reason": "not_expired", "age_minutes": round(age_minutes, 1)}
 
-        # Uncomment backend config for init
-        run_terraform_destroy(tmp_dir)
+    logger.info("TTL expired (%.1f minutes > %d minutes) -- discovering resources", age_minutes, TTL_MINUTES)
 
-    return {"status": "destroyed", "age_hours": age_hours}
+    # Step 2: Discover tagged resources
+    resources = discover_tagged_resources()
+    if not resources:
+        logger.info("No resources tagged with %s=%s found", AUTO_DESTROY_TAG_KEY, AUTO_DESTROY_TAG_VALUE)
+        return {"status": "skip", "reason": "no_tagged_resources", "age_minutes": round(age_minutes, 1)}
+
+    # Step 3: Delete in dependency order
+    deleted_types = []
+    errors = []
+
+    try:
+        # 3a. Delete ALBs first (listeners auto-deleted)
+        alb_arns = resources.get("elasticloadbalancing:loadbalancer", [])
+        if alb_arns:
+            delete_load_balancers(alb_arns)
+            deleted_types.append("load_balancers")
+
+        # 3b. Delete target groups (must be after ALB deletion)
+        tg_arns = resources.get("elasticloadbalancing:targetgroup", [])
+        if tg_arns:
+            delete_target_groups(tg_arns)
+            deleted_types.append("target_groups")
+
+        # 3c. Terminate EC2 instances
+        instance_arns = resources.get("ec2:instance", [])
+        if instance_arns:
+            terminate_instances(instance_arns)
+            deleted_types.append("instances")
+
+        # 3d. Delete NAT Gateways (slow, 1-5 min)
+        nat_arns = resources.get("ec2:natgateway", [])
+        if nat_arns:
+            delete_nat_gateways(nat_arns)
+            deleted_types.append("nat_gateways")
+
+        # 3e. Release Elastic IPs (must be after NAT GW fully deleted)
+        eip_arns = resources.get("ec2:elastic-ip", [])
+        if eip_arns:
+            release_elastic_ips(eip_arns)
+            deleted_types.append("elastic_ips")
+
+    except Exception as e:
+        logger.exception("Unexpected error during resource deletion")
+        errors.append(str(e))
+
+    result = {
+        "status": "destroyed" if not errors else "partial",
+        "age_minutes": round(age_minutes, 1),
+        "deleted_types": deleted_types,
+    }
+    if errors:
+        result["errors"] = errors
+
+    logger.info("Destroy completed: %s", result)
+    return result

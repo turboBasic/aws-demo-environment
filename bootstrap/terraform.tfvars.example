@@ -1,7 +1,5 @@
 aws_region   = "eu-central-1"
 project_name = "aws-demo"
 environment  = "demo"
-github_repo  = "https://github.com/turboBasic/aws-demo-environment.git"
-github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-ttl_hours    = 24
+ttl_minutes  = 1440  # 24 hours
 state_key    = "aws-demo/terraform.tfstate"

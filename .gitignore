@@ -9,6 +9,9 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Lambda zip artifacts
+bootstrap/lambda-destroyer/*.zip
+
 # Sensitive variable files
 *.auto.tfvars
 terraform.tfvars

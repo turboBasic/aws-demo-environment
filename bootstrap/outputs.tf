@@ -8,19 +8,9 @@ output "dynamodb_table_name" {
   value       = aws_dynamodb_table.terraform_locks.id
 }
 
-output "ecr_repository_url" {
-  description = "URL of the ECR repository for the Lambda destroyer image"
-  value       = aws_ecr_repository.lambda_destroyer.repository_url
-}
-
 output "lambda_function_name" {
   description = "Name of the Lambda destroyer function"
   value       = aws_lambda_function.destroyer.function_name
-}
-
-output "secret_arn" {
-  description = "ARN of the Secrets Manager secret for the GitHub token"
-  value       = aws_secretsmanager_secret.github_token.arn
 }
 
 output "backend_config" {
