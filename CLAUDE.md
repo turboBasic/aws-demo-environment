@@ -61,8 +61,6 @@ Note: If SSO session is expired, run `aws sso login --profile cargonautica` firs
 
 ## Terraform Commands
 
-If `terraform` is not found in PATH, look for it at `$HOME/.local/share/mise/installs/terraform/latest/terraform` and use the full path.
-
 ```bash
 terraform init          # Initialize providers and modules
 terraform fmt           # Format all .tf files
