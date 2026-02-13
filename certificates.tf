@@ -28,7 +28,7 @@ resource "cloudflare_dns_record" "acm_validation" {
 resource "cloudflare_dns_record" "demo" {
   zone_id = var.cloudflare_zone_id
   name    = var.domain_name
-  content = aws_lb.demo.dns_name
+  content = aws_cloudfront_distribution.main.domain_name
   type    = "CNAME"
   ttl     = 1
   proxied = true # orange cloud, Cloudflare proxy
@@ -44,7 +44,7 @@ resource "cloudflare_zone_setting" "ssl" {
 resource "cloudflare_dns_record" "www" {
   zone_id = var.cloudflare_zone_id
   name    = "www.${var.domain_name}"
-  content = aws_lb.demo.dns_name
+  content = aws_cloudfront_distribution.main.domain_name
   type    = "CNAME"
   ttl     = 1
   proxied = true # must be proxied for redirect rules to work
@@ -77,4 +77,44 @@ resource "cloudflare_ruleset" "redirect_www" {
       }
     }
   }]
+}
+
+################################################################################
+# CloudFront Certificate (us-east-1)
+################################################################################
+
+resource "aws_acm_certificate" "cloudfront" {
+  provider                  = aws.us_east_1
+  domain_name               = var.domain_name
+  subject_alternative_names = ["*.${var.domain_name}"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-cloudfront-cert"
+  })
+}
+
+resource "cloudflare_dns_record" "acm_validation_cloudfront" {
+  for_each = {
+    for dvo in aws_acm_certificate.cloudfront.domain_validation_options :
+    dvo.domain_name => dvo
+    if !startswith(dvo.domain_name, "*.")
+  }
+
+  zone_id = var.cloudflare_zone_id
+  name    = trimsuffix(each.value.resource_record_name, ".")
+  content = trimsuffix(each.value.resource_record_value, ".")
+  type    = each.value.resource_record_type
+  ttl     = 1
+  proxied = false # CRITICAL: DNS validation must not be proxied
+}
+
+resource "aws_acm_certificate_validation" "cloudfront" {
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.cloudfront.arn
+  validation_record_fqdns = [for dvo in aws_acm_certificate.cloudfront.domain_validation_options : dvo.resource_record_name]
 }
