@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProcessGrid - Static Content Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ProcessGrid Static Content Test</h1>
+            <p class="subtitle">Testing S3 static file serving</p>
+        </header>
+
+        <main>
+            <section class="status-section">
+                <h2>Status Check</h2>
+                <div id="statusBox" class="status-box">
+                    <p>Loading status...</p>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Static Files Information</h2>
+                <ul>
+                    <li><strong>HTML File:</strong> ✓ Served successfully</li>
+                    <li><strong>CSS File:</strong> <span id="cssStatus">Loading...</span></li>
+                    <li><strong>JavaScript File:</strong> <span id="jsStatus">Loading...</span></li>
+                </ul>
+            </section>
+
+            <section class="test-section">
+                <h2>Interactive Test</h2>
+                <button id="testButton" class="test-button">Test Button</button>
+                <div id="testOutput" class="test-output"></div>
+            </section>
+
+            <section class="details-section">
+                <h2>System Information</h2>
+                <pre id="sysInfo"></pre>
+            </section>
+        </main>
+
+        <footer>
+            <p>Static content test completed at <span id="timestamp"></span></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
