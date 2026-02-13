@@ -25,6 +25,8 @@ resource "aws_lb" "demo" {
   security_groups    = [aws_security_group.alb.id]
   subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
 
+  enable_deletion_protection = true
+
   tags = merge(local.common_tags, local.auto_destroy_tags, {
     Name = "${local.name_prefix}-alb"
   })
@@ -70,4 +72,17 @@ resource "aws_lb_listener" "http" {
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-http-listener"
   })
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.demo.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate_validation.demo.certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.demo.arn
+  }
 }
