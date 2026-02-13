@@ -9,20 +9,29 @@ resource "aws_acm_certificate_validation" "demo" {
   validation_record_fqdns = [for dvo in aws_acm_certificate.demo.domain_validation_options : dvo.resource_record_name]
 }
 
-# Create Cloudflare CNAMEs for DNS validation
-resource "cloudflare_dns_record" "acm_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.demo.domain_validation_options :
-    dvo.domain_name => dvo
-    if !startswith(dvo.domain_name, "*.")
-  }
+################################################################################
+# ACM Validation Records (Single record validates both certificates)
+################################################################################
 
+# Both certificates for the same domain validate with the same CNAME record
+# Use the CloudFront certificate's validation record (they're identical for same domain)
+# Filter to base domain only (exclude wildcard *.domain)
+locals {
+  cloudfront_validation = one([
+    for dvo in aws_acm_certificate.cloudfront.domain_validation_options :
+    dvo if dvo.domain_name == var.domain_name
+  ])
+}
+
+resource "cloudflare_dns_record" "acm_validation" {
   zone_id = var.cloudflare_zone_id
-  name    = trimsuffix(each.value.resource_record_name, ".")
-  content = trimsuffix(each.value.resource_record_value, ".")
-  type    = each.value.resource_record_type
+  name    = trimsuffix(local.cloudfront_validation.resource_record_name, ".")
+  content = trimsuffix(local.cloudfront_validation.resource_record_value, ".")
+  type    = local.cloudfront_validation.resource_record_type
   ttl     = 1
-  proxied = false # must be gray cloud for ACM validation
+  proxied = false # CRITICAL: Must be gray cloud (unproxied) for DNS validation
+
+  depends_on = [aws_acm_certificate.cloudfront]
 }
 
 resource "cloudflare_dns_record" "demo" {
@@ -96,21 +105,6 @@ resource "aws_acm_certificate" "cloudfront" {
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-cloudfront-cert"
   })
-}
-
-resource "cloudflare_dns_record" "acm_validation_cloudfront" {
-  for_each = {
-    for dvo in aws_acm_certificate.cloudfront.domain_validation_options :
-    dvo.domain_name => dvo
-    if !startswith(dvo.domain_name, "*.")
-  }
-
-  zone_id = var.cloudflare_zone_id
-  name    = trimsuffix(each.value.resource_record_name, ".")
-  content = trimsuffix(each.value.resource_record_value, ".")
-  type    = each.value.resource_record_type
-  ttl     = 1
-  proxied = false # CRITICAL: DNS validation must not be proxied
 }
 
 resource "aws_acm_certificate_validation" "cloudfront" {

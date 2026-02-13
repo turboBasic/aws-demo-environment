@@ -12,21 +12,23 @@ resource "aws_security_group" "alb" {
   })
 }
 
-resource "aws_vpc_security_group_ingress_rule" "alb_http" {
-  security_group_id = aws_security_group.alb.id
-  description       = "HTTP from anywhere"
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 80
-  to_port           = 80
-  ip_protocol       = "tcp"
-}
-
+# ALB accepts HTTPS from anywhere, but validates CloudFront custom header
+# This avoids security group rule quota issues (CloudFront prefix list has 55+ IPs)
 resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   security_group_id = aws_security_group.alb.id
-  description       = "HTTPS from anywhere"
+  description       = "HTTPS from anywhere (validated by X-Origin-Verify header)"
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 443
   to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTP from anywhere (redirects to HTTPS)"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 80
+  to_port           = 80
   ip_protocol       = "tcp"
 }
 
@@ -35,24 +37,6 @@ resource "aws_vpc_security_group_egress_rule" "alb_all" {
   description       = "All outbound traffic"
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "alb_https_cloudfront" {
-  security_group_id = aws_security_group.alb.id
-  description       = "HTTPS from CloudFront"
-  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
-  from_port         = 443
-  to_port           = 443
-  ip_protocol       = "tcp"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "alb_http_cloudfront" {
-  security_group_id = aws_security_group.alb.id
-  description       = "HTTP from CloudFront (for redirect)"
-  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
-  from_port         = 80
-  to_port           = 80
-  ip_protocol       = "tcp"
 }
 
 ################################################################################

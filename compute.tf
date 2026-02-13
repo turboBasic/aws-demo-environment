@@ -86,8 +86,40 @@ resource "aws_lb_listener" "https" {
   ssl_policy        = "ELBSecurityPolicy-2016-08"
   certificate_arn   = aws_acm_certificate_validation.demo.certificate_arn
 
+  # Validate CloudFront origin header, reject direct access
   default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Direct access not allowed"
+      status_code  = "403"
+    }
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-https-listener"
+  })
+}
+
+# Forward to target group only if CloudFront custom header matches
+resource "aws_lb_listener_rule" "cloudfront_origin" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 100
+
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.demo.arn
   }
+
+  condition {
+    http_header {
+      http_header_name = "X-Origin-Verify"
+      values           = [random_password.origin_verify.result]
+    }
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-cloudfront-rule"
+  })
 }
