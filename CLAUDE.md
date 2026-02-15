@@ -59,6 +59,26 @@ See [@.claude/scripts/aws-sso-credentials.sh](.claude/scripts/aws-sso-credential
 
 Note: If SSO session is expired, run `aws sso login --profile cargonautica` first.
 
+## Terraform Executable Location
+
+**IMPORTANT**: Before running any Terraform commands, always use the terraform skill to locate the correct terraform executable on the system.
+
+The terraform skill automatically finds terraform installed via various methods (mise, tfenv, asdf, Homebrew, system PATH). 
+
+**Usage Pattern**:
+
+```bash
+# Find terraform executable once per session
+TERRAFORM_BIN=$(.claude/skills/terraform/scripts/find-terraform.sh)
+
+# Use in all subsequent commands
+$TERRAFORM_BIN init
+$TERRAFORM_BIN plan
+$TERRAFORM_BIN apply
+```
+
+This ensures compatibility with different installation methods and environments. See @.claude/skills/terraform/SKILL.md for detailed documentation.
+
 ## Terraform Commands
 
 ```bash
