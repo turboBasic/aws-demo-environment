@@ -145,3 +145,48 @@ moved {
   from = aws_instance.demo
   to   = module.web_instance.aws_instance.demo
 }
+################################################################################
+# Moved Blocks for Static Site Module Migration
+# These blocks ensure zero downtime by telling Terraform about the resource
+# address changes when transitioning from root module to modules/static-site
+################################################################################
+
+moved {
+  from = aws_cloudfront_origin_access_control.s3
+  to   = module.static_site.aws_cloudfront_origin_access_control.s3
+}
+
+moved {
+  from = aws_s3_bucket.static
+  to   = module.static_site.aws_s3_bucket.static
+}
+
+moved {
+  from = aws_s3_bucket_versioning.static
+  to   = module.static_site.aws_s3_bucket_versioning.static
+}
+
+moved {
+  from = aws_s3_bucket_server_side_encryption_configuration.static
+  to   = module.static_site.aws_s3_bucket_server_side_encryption_configuration.static
+}
+
+moved {
+  from = aws_s3_bucket_public_access_block.static
+  to   = module.static_site.aws_s3_bucket_public_access_block.static
+}
+
+moved {
+  from = aws_s3_bucket_lifecycle_configuration.static
+  to   = module.static_site.aws_s3_bucket_lifecycle_configuration.static
+}
+
+moved {
+  from = aws_cloudfront_distribution.main
+  to   = module.static_site.aws_cloudfront_distribution.main
+}
+
+moved {
+  from = aws_s3_bucket_policy.static
+  to   = module.static_site.aws_s3_bucket_policy.static
+}

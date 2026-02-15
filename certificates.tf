@@ -37,7 +37,7 @@ resource "cloudflare_dns_record" "acm_validation" {
 resource "cloudflare_dns_record" "demo" {
   zone_id = var.cloudflare_zone_id
   name    = var.domain_name
-  content = aws_cloudfront_distribution.main.domain_name
+  content = module.static_site.cloudfront_domain_name
   type    = "CNAME"
   ttl     = 1
   proxied = true # orange cloud, Cloudflare proxy
@@ -53,7 +53,7 @@ resource "cloudflare_zone_setting" "ssl" {
 resource "cloudflare_dns_record" "www" {
   zone_id = var.cloudflare_zone_id
   name    = "www.${var.domain_name}"
-  content = aws_cloudfront_distribution.main.domain_name
+  content = module.static_site.cloudfront_domain_name
   type    = "CNAME"
   ttl     = 1
   proxied = true # must be proxied for redirect rules to work
