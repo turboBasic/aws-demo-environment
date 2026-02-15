@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y httpd
+systemctl enable httpd
+systemctl start httpd
+
+INSTANCE_ID=$(ec2-metadata -i | cut -d' ' -f2)
+AZ=$(ec2-metadata -z | cut -d' ' -f2)
+
+cat > /var/www/html/index.html <<'HTML'
+${html_content}
+HTML
+
+# Replace placeholders if present
+sed -i "s/{{INSTANCE_ID}}/$${INSTANCE_ID}/g" /var/www/html/index.html
+sed -i "s/{{AVAILABILITY_ZONE}}/$${AZ}/g" /var/www/html/index.html

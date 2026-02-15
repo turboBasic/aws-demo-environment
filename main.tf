@@ -102,6 +102,25 @@ module "ecs_fargate" {
 }
 
 ################################################################################
+# Web Instance Module
+################################################################################
+
+# module "web_instance" {
+#   source = "./modules/web-instance"
+
+#   vpc_id                = module.networking.vpc_id
+#   private_subnet_id     = module.networking.private_subnet_a_id
+#   alb_security_group_id = module.application_load_balancer.alb_security_group_id
+#   alb_target_group_arn  = module.application_load_balancer.target_group_arn
+#   html_content          = local.web_instance_html
+#   name_prefix           = local.name_prefix
+
+#   tags = local.common_tags
+
+#   auto_destroy_tags = local.auto_destroy_tags
+# }
+
+################################################################################
 # SSL Certificates Module
 ################################################################################
 

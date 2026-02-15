@@ -17,6 +17,27 @@ data "aws_ami" "al2023" {
   }
 }
 
+locals {
+  default_html = <<-HTML
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>page is empty</title>
+  </head>
+  <body>
+    <p>page is empty</p>
+  </body>
+  </html>
+  HTML
+
+  resolved_html      = var.html_content != "" ? var.html_content : local.default_html
+  rendered_user_data = templatefile("${path.module}/user_data.sh.tftpl", {
+    html_content = local.resolved_html
+  })
+}
+
 ################################################################################
 # EC2 Security Group
 ################################################################################
@@ -60,7 +81,7 @@ resource "aws_instance" "demo" {
   instance_type          = var.instance_type
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.ec2.id]
-  user_data              = var.user_data
+  user_data              = local.rendered_user_data
 
   tags = merge(var.tags, var.auto_destroy_tags, {
     Name = "${var.name_prefix}-instance"

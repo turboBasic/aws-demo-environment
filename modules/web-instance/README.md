@@ -47,10 +47,9 @@ module "web_instance" {
 
   vpc_id                    = module.networking.vpc_id
   private_subnet_id         = module.networking.private_subnet_a_id
-  ami_id                    = data.aws_ami.al2023.id
   instance_type             = "t3.micro"
   alb_security_group_id     = module.application_load_balancer.alb_security_group_id
-  user_data                 = file("${path.module}/scripts/user_data.sh")
+  html_content              = local.web_instance_html
 
   name_prefix       = "my-app-demo"
   tags              = local.common_tags
@@ -71,10 +70,9 @@ resource "aws_lb_target_group_attachment" "demo" {
 |------|-------------|------|----------|
 | vpc_id | VPC ID for security group | string | yes |
 | private_subnet_id | Private subnet for EC2 placement | string | yes |
-| ami_id | AMI ID (typically Amazon Linux 2023) | string | yes |
 | instance_type | EC2 instance type | string | no (default: t3.micro) |
 | alb_security_group_id | ALB security group for ingress | string | yes |
-| user_data | User data script for initialization | string | no |
+| html_content | HTML content for the instance index page | string | no |
 | name_prefix | Prefix for resource names | string | yes |
 | tags | Common tags for all resources | map(string) | no |
 | auto_destroy_tags | Tags for ephemeral resources | map(string) | no |
@@ -103,11 +101,7 @@ resource "aws_lb_target_group_attachment" "demo" {
 
 ## User Data
 
-The module supports custom initialization scripts via `user_data` variable:
-
-```hcl
-user_data = file("${path.module}/scripts/user_data.sh")
-```
+The module renders user data internally and accepts page HTML via `html_content`.
 
 Common tasks in user data:
 - Install web server (Apache, Nginx)

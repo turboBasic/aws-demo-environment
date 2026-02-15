@@ -24,8 +24,8 @@ variable "alb_target_group_arn" {
   type        = string
 }
 
-variable "user_data" {
-  description = "User data script for EC2 initialization"
+variable "html_content" {
+  description = "HTML content for the instance index page (supports {{INSTANCE_ID}} and {{AVAILABILITY_ZONE}} placeholders)"
   type        = string
   default     = ""
 }
