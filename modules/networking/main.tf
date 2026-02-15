@@ -3,12 +3,12 @@
 ################################################################################
 
 resource "aws_vpc" "main" {
-  cidr_block           = local.vpc_cidr
+  cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-vpc"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-vpc"
   })
 }
 
@@ -19,8 +19,8 @@ resource "aws_vpc" "main" {
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-igw"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-igw"
   })
 }
 
@@ -30,23 +30,23 @@ resource "aws_internet_gateway" "main" {
 
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = local.public_a_cidr
-  availability_zone       = data.aws_availability_zones.available.names[0]
+  cidr_block              = var.public_subnet_cidrs[0]
+  availability_zone       = var.availability_zones[0]
   map_public_ip_on_launch = true
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-public-a"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-public-a"
   })
 }
 
 resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = local.public_b_cidr
-  availability_zone       = data.aws_availability_zones.available.names[1]
+  cidr_block              = var.public_subnet_cidrs[1]
+  availability_zone       = var.availability_zones[1]
   map_public_ip_on_launch = true
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-public-b"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-public-b"
   })
 }
 
@@ -56,11 +56,11 @@ resource "aws_subnet" "public_b" {
 
 resource "aws_subnet" "private_a" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = local.private_a_cidr
-  availability_zone = data.aws_availability_zones.available.names[0]
+  cidr_block        = var.private_subnet_cidrs[0]
+  availability_zone = var.availability_zones[0]
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-private-a"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-private-a"
   })
 }
 
@@ -71,8 +71,8 @@ resource "aws_subnet" "private_a" {
 resource "aws_eip" "nat" {
   domain = "vpc"
 
-  tags = merge(local.common_tags, local.auto_destroy_tags, {
-    Name = "${local.name_prefix}-nat-eip"
+  tags = merge(var.tags, var.auto_destroy_tags, {
+    Name = "${var.name_prefix}-nat-eip"
   })
 }
 
@@ -80,8 +80,8 @@ resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public_a.id
 
-  tags = merge(local.common_tags, local.auto_destroy_tags, {
-    Name = "${local.name_prefix}-nat"
+  tags = merge(var.tags, var.auto_destroy_tags, {
+    Name = "${var.name_prefix}-nat"
   })
 
   depends_on = [aws_internet_gateway.main]
@@ -99,8 +99,8 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-public-rt"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-public-rt"
   })
 }
 
@@ -112,8 +112,8 @@ resource "aws_route_table" "private" {
     nat_gateway_id = aws_nat_gateway.main.id
   }
 
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-private-rt"
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-private-rt"
   })
 }
 
@@ -134,4 +134,19 @@ resource "aws_route_table_association" "public_b" {
 resource "aws_route_table_association" "private_a" {
   subnet_id      = aws_subnet.private_a.id
   route_table_id = aws_route_table.private.id
+}
+
+################################################################################
+# VPC Endpoints
+################################################################################
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = [aws_route_table.private.id]
+
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-s3-endpoint"
+  })
 }

@@ -29,3 +29,21 @@ provider "aws" {
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
+################################################################################
+# Networking Module
+################################################################################
+
+module "networking" {
+  source = "./modules/networking"
+
+  vpc_cidr             = var.vpc_cidr
+  availability_zones   = data.aws_availability_zones.available.names
+  public_subnet_cidrs  = [local.public_a_cidr, local.public_b_cidr]
+  private_subnet_cidrs = [local.private_a_cidr]
+  region               = var.aws_region
+  name_prefix          = local.name_prefix
+
+  tags = local.common_tags
+
+  auto_destroy_tags = local.auto_destroy_tags
+}

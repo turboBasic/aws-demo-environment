@@ -5,7 +5,7 @@
 resource "aws_instance" "demo" {
   ami                    = data.aws_ami.al2023.id
   instance_type          = var.instance_type
-  subnet_id              = aws_subnet.private_a.id
+  subnet_id              = module.networking.private_subnet_a_id
   vpc_security_group_ids = [aws_security_group.ec2.id]
   user_data              = file("${path.module}/scripts/user_data.sh")
 
@@ -23,7 +23,7 @@ resource "aws_lb" "demo" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+  subnets            = module.networking.public_subnet_ids
 
   enable_deletion_protection = true
 
@@ -36,7 +36,7 @@ resource "aws_lb_target_group" "demo" {
   name     = "${local.name_prefix}-tg"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  vpc_id   = module.networking.vpc_id
 
   health_check {
     path                = "/"
