@@ -34,36 +34,47 @@ terraform apply
 
 ## AWS Authentication
 
+**IMPORTANT**: Always use the `aws` skill to configure authentication before running AWS CLI commands or Terraform operations.
+
 When executing AWS CLI commands or Terraform, use the `cargonautica` AWS profile for authentication.
 
-### Method 1: Using AWS Profile (Preferred)
+The `aws` skill provides helpers to configure and verify authentication:
 
 ```bash
-# Terraform automatically uses AWS_PROFILE
+# Check if authentication is valid
+.claude/skills/aws/scripts/check-aws-auth.sh
+
+# Set up authentication (exports AWS_PROFILE)
 export AWS_PROFILE=cargonautica
-terraform plan
 
-# For AWS CLI commands
-aws s3 ls --profile cargonautica
+# Verify it works
+aws sts get-caller-identity
 ```
 
-### Method 2: Export Temporary Credentials (if needed)
-
-If explicit credentials are required, use the provided script to extract them from the cached SSO token:
+Terraform automatically uses the `AWS_PROFILE` environment variable:
 
 ```bash
-source .claude/scripts/aws-sso-credentials.sh
+export AWS_PROFILE=cargonautica
+terraform plan  # Uses cargonautica profile automatically
 ```
 
-See [@.claude/scripts/aws-sso-credentials.sh](.claude/scripts/aws-sso-credentials.sh) for implementation details.
+### Handling Expired SSO Sessions
 
-Note: If SSO session is expired, run `aws sso login --profile cargonautica` first.
+If the SSO session is expired, run:
+
+```bash
+aws sso login --profile cargonautica
+```
+
+Then verify authentication with the check script before proceeding.
+
+See [@.claude/skills/aws/SKILL.md](.claude/skills/aws/SKILL.md) for detailed documentation on authentication helpers.
 
 ## Terraform Executable Location
 
 **IMPORTANT**: Before running any Terraform commands, always use the terraform skill to locate the correct terraform executable on the system.
 
-The terraform skill automatically finds terraform installed via various methods (mise, tfenv, asdf, Homebrew, system PATH). 
+The terraform skill automatically finds terraform installed via various methods (mise, tfenv, asdf, Homebrew, system PATH).
 
 **Usage Pattern**:
 
