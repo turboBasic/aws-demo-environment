@@ -47,8 +47,8 @@ module "networking" {
   source = "./modules/networking"
 
   vpc_cidr             = var.vpc_cidr
-  public_subnet_cidrs  = [local.public_a_cidr, local.public_b_cidr]
-  private_subnet_cidrs = [local.private_a_cidr]
+  public_subnet_cidrs  = [local.network_cidrs.public_a, local.network_cidrs.public_b]
+  private_subnet_cidrs = [local.network_cidrs.private_a]
   region               = var.aws_region
   name_prefix          = local.name_prefix
 
