@@ -16,16 +16,16 @@ variable "project_name" {
   default     = "aws-demo"
 }
 
-variable "instance_type" {
-  description = "EC2 instance type for the demo server"
-  type        = string
-  default     = "t3.micro"
-}
-
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
+}
+
+variable "create_nat_gateway" {
+  description = "Whether to create NAT Gateway for private subnet internet access (increases cost by ~$1/day)"
+  type        = bool
+  default     = false
 }
 
 variable "domain_name" {

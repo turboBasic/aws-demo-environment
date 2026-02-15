@@ -62,10 +62,13 @@ resource "aws_lb" "demo" {
 ################################################################################
 
 resource "aws_lb_target_group" "demo" {
-  name     = "${var.name_prefix}-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
+  name        = "${var.name_prefix}-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip" # Changed from "instance" to "ip" for Fargate
+
+  deregistration_delay = 30 # Reduced from default 300s for faster teardown
 
   health_check {
     path                = "/"

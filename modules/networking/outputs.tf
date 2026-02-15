@@ -39,18 +39,18 @@ output "private_subnet_a_id" {
 }
 
 output "nat_gateway_id" {
-  description = "The ID of the NAT Gateway"
-  value       = aws_nat_gateway.main.id
+  description = "The ID of the NAT Gateway (if created)"
+  value       = var.create_nat_gateway ? module.nat_gateway[0].nat_gateway_id : null
 }
 
 output "nat_eip_id" {
-  description = "The ID of the NAT Gateway Elastic IP"
-  value       = aws_eip.nat.id
+  description = "The ID of the NAT Gateway Elastic IP (if created)"
+  value       = var.create_nat_gateway ? module.nat_gateway[0].nat_eip_id : null
 }
 
 output "nat_eip_public_ip" {
-  description = "The public IP address of the NAT Gateway"
-  value       = aws_eip.nat.public_ip
+  description = "The public IP address of the NAT Gateway (if created)"
+  value       = var.create_nat_gateway ? module.nat_gateway[0].nat_eip_public_ip : null
 }
 
 output "public_route_table_id" {

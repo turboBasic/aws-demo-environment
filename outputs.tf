@@ -3,9 +3,14 @@ output "alb_dns_name" {
   value       = module.application_load_balancer.alb_dns_name
 }
 
-output "ec2_instance_id" {
-  description = "ID of the demo EC2 instance"
-  value       = module.web_instance.instance_id
+output "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  value       = module.ecs_fargate.cluster_name
+}
+
+output "ecs_service_name" {
+  description = "Name of the ECS service"
+  value       = module.ecs_fargate.service_name
 }
 
 output "vpc_id" {

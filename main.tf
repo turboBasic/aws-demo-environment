@@ -51,11 +51,13 @@ module "networking" {
   private_subnet_cidrs = [local.network_cidrs.private_a]
   region               = var.aws_region
   name_prefix          = local.name_prefix
+  create_nat_gateway   = var.create_nat_gateway
 
   tags = local.common_tags
 
   auto_destroy_tags = local.auto_destroy_tags
 }
+
 ################################################################################
 # Application Load Balancer Module
 ################################################################################
@@ -73,25 +75,32 @@ module "application_load_balancer" {
 
   auto_destroy_tags = local.auto_destroy_tags
 }
+
 ################################################################################
-# Web Instance Module
+# ECS Fargate Module
 ################################################################################
 
-module "web_instance" {
-  source = "./modules/web-instance"
+module "ecs_fargate" {
+  source = "./modules/ecs-fargate"
 
-  vpc_id                = module.networking.vpc_id
-  private_subnet_id     = module.networking.private_subnet_a_id
-  instance_type         = var.instance_type
-  alb_security_group_id = module.application_load_balancer.alb_security_group_id
-  alb_target_group_arn  = module.application_load_balancer.target_group_arn
-  user_data             = file("${path.module}/scripts/user_data.sh")
   name_prefix           = local.name_prefix
+  vpc_id                = module.networking.vpc_id
+  public_subnet_ids     = module.networking.public_subnet_ids
+  alb_security_group_id = module.application_load_balancer.alb_security_group_id
+  target_group_arn      = module.application_load_balancer.target_group_arn
+  region                = var.aws_region
+
+  container_image = "httpd:2.4"
+  container_port  = 80
+  task_cpu        = "256"
+  task_memory     = "512"
+  desired_count   = 1
 
   tags = local.common_tags
 
   auto_destroy_tags = local.auto_destroy_tags
 }
+
 ################################################################################
 # SSL Certificates Module
 ################################################################################
