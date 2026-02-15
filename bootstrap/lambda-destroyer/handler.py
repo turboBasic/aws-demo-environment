@@ -97,6 +97,9 @@ def _classify_resource(arn: str) -> str | None:
             return "elasticloadbalancing:loadbalancer"
         if resource_part.startswith("targetgroup/"):
             return "elasticloadbalancing:targetgroup"
+    elif service == "ecs":
+        if resource_part.startswith("service/"):
+            return "ecs:service"
     elif service == "ec2":
         if resource_part.startswith("instance/"):
             return "ec2:instance"
@@ -113,11 +116,84 @@ def _extract_id_from_arn(arn: str) -> str:
     return arn.rsplit("/", 1)[-1]
 
 
+def _extract_ecs_service_parts(arn: str) -> tuple[str, str]:
+    """Extract ECS cluster name and service name from a service ARN."""
+    resource = arn.split(":", 5)[-1]
+    # resource format: service/cluster-name/service-name
+    _, cluster_name, service_name = resource.split("/", 2)
+    return cluster_name, service_name
+
+
+def delete_ecs_services(arns: list[str]) -> None:
+    """Delete ECS services to stop Fargate tasks before ALB cleanup."""
+    client = boto3.client("ecs", region_name=STATE_REGION)
+    max_retries = 10
+    retry_delay = 10  # seconds
+
+    for arn in arns:
+        try:
+            cluster_name, service_name = _extract_ecs_service_parts(arn)
+        except ValueError:
+            logger.error("Unexpected ECS service ARN format: %s", arn)
+            continue
+
+        try:
+            logger.info("Scaling ECS service to 0: %s", arn)
+            client.update_service(cluster=cluster_name, service=service_name, desiredCount=0)
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "ServiceNotFoundException":
+                logger.info("ECS service %s already deleted", arn)
+                continue
+            logger.error("Failed to scale ECS service %s: %s", arn, e)
+
+        for attempt in range(max_retries):
+            try:
+                logger.info("Deleting ECS service: %s (attempt %d/%d)", arn, attempt + 1, max_retries)
+                client.delete_service(cluster=cluster_name, service=service_name, force=True)
+                break
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code")
+                if error_code == "ServiceNotFoundException":
+                    logger.info("ECS service %s already deleted", arn)
+                    break
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        "Failed to delete ECS service %s, retrying in %ds: %s",
+                        arn, retry_delay, e,
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    logger.error("Failed to delete ECS service %s: %s", arn, e)
+                    break
+
+        try:
+            waiter = client.get_waiter("services_inactive")
+            logger.info("Waiting for ECS service to become inactive: %s", arn)
+            waiter.wait(
+                cluster=cluster_name,
+                services=[service_name],
+                WaiterConfig={"Delay": 10, "MaxAttempts": 18},
+            )
+        except WaiterError as e:
+            logger.error("Timed out waiting for ECS service to become inactive %s: %s", arn, e)
+
+
 def delete_load_balancers(arns: list[str]) -> None:
     """Delete ALBs and wait for deletion. Listeners are auto-deleted with the ALB."""
     client = boto3.client("elbv2", region_name=STATE_REGION)
     active_arns = []
     for arn in arns:
+        try:
+            client.modify_load_balancer_attributes(
+                LoadBalancerArn=arn,
+                Attributes=[{"Key": "deletion_protection.enabled", "Value": "false"}],
+            )
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code != "LoadBalancerNotFound":
+                logger.warning("Failed to disable deletion protection for %s: %s", arn, e)
+
         try:
             logger.info("Deleting load balancer: %s", arn)
             client.delete_load_balancer(LoadBalancerArn=arn)
@@ -344,31 +420,37 @@ def lambda_handler(event, context):
     errors = []
 
     try:
-        # 3a. Delete ALBs first (listeners auto-deleted)
+        # 3a. Delete ECS services to stop Fargate tasks
+        ecs_service_arns = resources.get("ecs:service", [])
+        if ecs_service_arns:
+            delete_ecs_services(ecs_service_arns)
+            deleted_types.append("ecs_services")
+
+        # 3b. Delete ALBs (listeners auto-deleted)
         alb_arns = resources.get("elasticloadbalancing:loadbalancer", [])
         if alb_arns:
             delete_load_balancers(alb_arns)
             deleted_types.append("load_balancers")
 
-        # 3b. Delete target groups (must be after ALB deletion)
+        # 3c. Delete target groups (must be after ALB deletion)
         tg_arns = resources.get("elasticloadbalancing:targetgroup", [])
         if tg_arns:
             delete_target_groups(tg_arns)
             deleted_types.append("target_groups")
 
-        # 3c. Terminate EC2 instances
+        # 3d. Terminate EC2 instances
         instance_arns = resources.get("ec2:instance", [])
         if instance_arns:
             terminate_instances(instance_arns)
             deleted_types.append("instances")
 
-        # 3d. Delete NAT Gateways (slow, 1-5 min)
+        # 3e. Delete NAT Gateways (slow, 1-5 min)
         nat_arns = resources.get("ec2:natgateway", [])
         if nat_arns:
             delete_nat_gateways(nat_arns)
             deleted_types.append("nat_gateways")
 
-        # 3e. Release Elastic IPs (must be after NAT GW fully deleted)
+        # 3f. Release Elastic IPs (must be after NAT GW fully deleted)
         eip_arns = resources.get("ec2:elastic-ip", [])
         if eip_arns:
             release_elastic_ips(eip_arns)

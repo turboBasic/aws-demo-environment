@@ -93,8 +93,19 @@ resource "aws_iam_role_policy" "lambda_demo_resource_management" {
         Action = [
           "elasticloadbalancing:DescribeLoadBalancers",
           "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:ModifyLoadBalancerAttributes",
           "elasticloadbalancing:DeleteLoadBalancer",
           "elasticloadbalancing:DeleteTargetGroup",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECSDestroyOperations"
+        Effect = "Allow"
+        Action = [
+          "ecs:UpdateService",
+          "ecs:DeleteService",
+          "ecs:DescribeServices",
         ]
         Resource = "*"
       },
