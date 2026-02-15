@@ -7,15 +7,6 @@ variable "vpc_cidr" {
   }
 }
 
-variable "availability_zones" {
-  description = "List of availability zones to use for subnets"
-  type        = list(string)
-  validation {
-    condition     = length(var.availability_zones) >= 2
-    error_message = "At least 2 availability zones are required for ALB"
-  }
-}
-
 variable "public_subnet_cidrs" {
   description = "List of CIDR blocks for public subnets (must match number of AZs)"
   type        = list(string)

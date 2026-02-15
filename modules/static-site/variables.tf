@@ -35,26 +35,6 @@ variable "price_class" {
   default     = "PriceClass_100"
 }
 
-variable "cache_policy_disabled_id" {
-  description = "CloudFront cache policy ID for cache-disabled behavior"
-  type        = string
-}
-
-variable "origin_request_policy_all_viewer_id" {
-  description = "CloudFront origin request policy ID for all viewer requests"
-  type        = string
-}
-
-variable "cache_policy_optimized_id" {
-  description = "CloudFront cache policy ID for optimized caching"
-  type        = string
-}
-
-variable "origin_request_policy_cors_s3_id" {
-  description = "CloudFront origin request policy ID for CORS S3 origin"
-  type        = string
-}
-
 variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)

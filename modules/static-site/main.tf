@@ -1,4 +1,24 @@
 ################################################################################
+# CloudFront Managed Policies Data Sources
+################################################################################
+
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer" {
+  name = "Managed-AllViewer"
+}
+
+data "aws_cloudfront_origin_request_policy" "cors_s3" {
+  name = "Managed-CORS-S3Origin"
+}
+
+################################################################################
 # CloudFront Origin Access Control
 ################################################################################
 
@@ -125,8 +145,8 @@ resource "aws_cloudfront_distribution" "main" {
     cached_methods         = ["GET", "HEAD"]
     compress               = true
 
-    cache_policy_id          = var.cache_policy_disabled_id
-    origin_request_policy_id = var.origin_request_policy_all_viewer_id
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
   }
 
   # Ordered cache behavior: /static/* to S3 (static content)
@@ -138,8 +158,8 @@ resource "aws_cloudfront_distribution" "main" {
     cached_methods         = ["GET", "HEAD"]
     compress               = true
 
-    cache_policy_id          = var.cache_policy_optimized_id
-    origin_request_policy_id = var.origin_request_policy_cors_s3_id
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.cors_s3.id
   }
 
   restrictions {

@@ -8,11 +8,6 @@ variable "private_subnet_id" {
   type        = string
 }
 
-variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -21,6 +16,11 @@ variable "instance_type" {
 
 variable "alb_security_group_id" {
   description = "Security group ID of the ALB for ingress rules"
+  type        = string
+}
+
+variable "alb_target_group_arn" {
+  description = "ARN of the ALB target group to attach the instance"
   type        = string
 }
 
