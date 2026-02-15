@@ -7,6 +7,7 @@
       "Bash(*/terraform version)",
       "Bash(*/check-aws-auth.sh)",
       "Bash(*/setup-aws-auth.sh)",
+      "Bash(*/find-terraform.sh)",
       "WebSearch",
       "WebFetch(domain:registry.terraform.io)"
     ]

@@ -36,59 +36,29 @@ terraform apply
 
 **IMPORTANT**: Always use the `aws` skill to configure authentication before running AWS CLI commands or Terraform operations.
 
-When executing AWS CLI commands or Terraform, use the `cargonautica` AWS profile for authentication.
-
-The `aws` skill provides helpers to configure and verify authentication:
+When executing AWS CLI commands or Terraform, use the `cargonautica` AWS profile:
 
 ```bash
-# Check if authentication is valid
-.claude/skills/aws/scripts/check-aws-auth.sh
-
-# Set up authentication (exports AWS_PROFILE)
 export AWS_PROFILE=cargonautica
-
-# Verify it works
 aws sts get-caller-identity
 ```
 
-Terraform automatically uses the `AWS_PROFILE` environment variable:
-
-```bash
-export AWS_PROFILE=cargonautica
-terraform plan  # Uses cargonautica profile automatically
-```
-
-### Handling Expired SSO Sessions
-
-If the SSO session is expired, run:
-
-```bash
-aws sso login --profile cargonautica
-```
-
-Then verify authentication with the check script before proceeding.
-
-See [@.claude/skills/aws/SKILL.md](.claude/skills/aws/SKILL.md) for detailed documentation on authentication helpers.
+See [@.claude/skills/aws/SKILL.md](.claude/skills/aws/SKILL.md) for complete authentication documentation including setup helpers, error handling, and alternative methods.
 
 ## Terraform Executable Location
 
 **IMPORTANT**: Before running any Terraform commands, always use the terraform skill to locate the correct terraform executable on the system.
 
-The terraform skill automatically finds terraform installed via various methods (mise, tfenv, asdf, Homebrew, system PATH).
-
-**Usage Pattern**:
+Quick start:
 
 ```bash
-# Find terraform executable once per session
 TERRAFORM_BIN=$(.claude/skills/terraform/scripts/find-terraform.sh)
-
-# Use in all subsequent commands
 $TERRAFORM_BIN init
 $TERRAFORM_BIN plan
 $TERRAFORM_BIN apply
 ```
 
-This ensures compatibility with different installation methods and environments. See @.claude/skills/terraform/SKILL.md for detailed documentation.
+See [@.claude/skills/terraform/SKILL.md](.claude/skills/terraform/SKILL.md) for complete documentation including supported installation methods and error handling.
 
 ## Terraform Commands
 
