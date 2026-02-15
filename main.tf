@@ -64,3 +64,22 @@ module "application_load_balancer" {
 
   auto_destroy_tags = local.auto_destroy_tags
 }
+################################################################################
+# Web Instance Module
+################################################################################
+
+module "web_instance" {
+  source = "./modules/web-instance"
+
+  vpc_id                = module.networking.vpc_id
+  private_subnet_id     = module.networking.private_subnet_a_id
+  ami_id                = data.aws_ami.al2023.id
+  instance_type         = var.instance_type
+  alb_security_group_id = module.application_load_balancer.alb_security_group_id
+  user_data             = file("${path.module}/scripts/user_data.sh")
+  name_prefix           = local.name_prefix
+
+  tags = local.common_tags
+
+  auto_destroy_tags = local.auto_destroy_tags
+}

@@ -5,7 +5,7 @@ output "alb_dns_name" {
 
 output "ec2_instance_id" {
   description = "ID of the demo EC2 instance"
-  value       = aws_instance.demo.id
+  value       = module.web_instance.instance_id
 }
 
 output "vpc_id" {

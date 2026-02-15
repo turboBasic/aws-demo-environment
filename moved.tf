@@ -120,3 +120,28 @@ moved {
   from = aws_lb_listener_rule.cloudfront_origin
   to   = module.application_load_balancer.aws_lb_listener_rule.cloudfront_origin
 }
+################################################################################
+# Moved Blocks for Web Instance Module Migration
+# These blocks ensure zero downtime by telling Terraform about the resource
+# address changes when transitioning from root module to modules/web-instance
+################################################################################
+
+moved {
+  from = aws_security_group.ec2
+  to   = module.web_instance.aws_security_group.ec2
+}
+
+moved {
+  from = aws_vpc_security_group_ingress_rule.ec2_http_from_alb
+  to   = module.web_instance.aws_vpc_security_group_ingress_rule.ec2_http_from_alb
+}
+
+moved {
+  from = aws_vpc_security_group_egress_rule.ec2_all
+  to   = module.web_instance.aws_vpc_security_group_egress_rule.ec2_all
+}
+
+moved {
+  from = aws_instance.demo
+  to   = module.web_instance.aws_instance.demo
+}
