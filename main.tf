@@ -47,3 +47,20 @@ module "networking" {
 
   auto_destroy_tags = local.auto_destroy_tags
 }
+################################################################################
+# Application Load Balancer Module
+################################################################################
+
+module "application_load_balancer" {
+  source = "./modules/application-load-balancer"
+
+  vpc_id               = module.networking.vpc_id
+  public_subnet_ids    = module.networking.public_subnet_ids
+  certificate_arn      = aws_acm_certificate_validation.demo.certificate_arn
+  origin_verify_header = random_password.origin_verify.result
+  name_prefix          = local.name_prefix
+
+  tags = local.common_tags
+
+  auto_destroy_tags = local.auto_destroy_tags
+}

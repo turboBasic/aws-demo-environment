@@ -33,7 +33,7 @@ resource "aws_cloudfront_distribution" "main" {
 
   # Origin 1: ALB (default behavior)
   origin {
-    domain_name = aws_lb.demo.dns_name
+    domain_name = module.application_load_balancer.alb_dns_name
     origin_id   = "alb"
 
     custom_origin_config {

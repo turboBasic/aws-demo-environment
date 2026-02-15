@@ -70,3 +70,53 @@ moved {
   from = aws_vpc_endpoint.s3
   to   = module.networking.aws_vpc_endpoint.s3
 }
+################################################################################
+# Moved Blocks for ALB Module Migration
+# These blocks ensure zero downtime by telling Terraform about the resource
+# address changes when transitioning from root module to modules/application-load-balancer
+################################################################################
+
+moved {
+  from = aws_security_group.alb
+  to   = module.application_load_balancer.aws_security_group.alb
+}
+
+moved {
+  from = aws_vpc_security_group_ingress_rule.alb_https
+  to   = module.application_load_balancer.aws_vpc_security_group_ingress_rule.alb_https
+}
+
+moved {
+  from = aws_vpc_security_group_ingress_rule.alb_http
+  to   = module.application_load_balancer.aws_vpc_security_group_ingress_rule.alb_http
+}
+
+moved {
+  from = aws_vpc_security_group_egress_rule.alb_all
+  to   = module.application_load_balancer.aws_vpc_security_group_egress_rule.alb_all
+}
+
+moved {
+  from = aws_lb.demo
+  to   = module.application_load_balancer.aws_lb.demo
+}
+
+moved {
+  from = aws_lb_target_group.demo
+  to   = module.application_load_balancer.aws_lb_target_group.demo
+}
+
+moved {
+  from = aws_lb_listener.http
+  to   = module.application_load_balancer.aws_lb_listener.http
+}
+
+moved {
+  from = aws_lb_listener.https
+  to   = module.application_load_balancer.aws_lb_listener.https
+}
+
+moved {
+  from = aws_lb_listener_rule.cloudfront_origin
+  to   = module.application_load_balancer.aws_lb_listener_rule.cloudfront_origin
+}
