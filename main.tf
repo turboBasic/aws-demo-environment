@@ -66,7 +66,7 @@ module "application_load_balancer" {
 
   vpc_id               = module.networking.vpc_id
   public_subnet_ids    = module.networking.public_subnet_ids
-  certificate_arn      = aws_acm_certificate_validation.demo.certificate_arn
+  certificate_arn      = module.ssl_certificates.regional_certificate_arn
   origin_verify_header = random_password.origin_verify.result
   name_prefix          = local.name_prefix
 
@@ -94,6 +94,24 @@ module "web_instance" {
   auto_destroy_tags = local.auto_destroy_tags
 }
 ################################################################################
+# SSL Certificates Module
+################################################################################
+
+module "ssl_certificates" {
+  source = "./modules/ssl-certificates"
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  domain_name = var.domain_name
+  name_prefix = local.name_prefix
+
+  tags = local.common_tags
+}
+
+################################################################################
 # Static Site (S3 + CloudFront) Module
 ################################################################################
 
@@ -102,7 +120,7 @@ module "static_site" {
 
   domain_name                          = var.domain_name
   alb_dns_name                         = module.application_load_balancer.alb_dns_name
-  cloudfront_certificate_arn           = aws_acm_certificate_validation.cloudfront.certificate_arn
+  cloudfront_certificate_arn           = module.ssl_certificates.cloudfront_certificate_arn
   account_id                           = data.aws_caller_identity.current.account_id
   origin_verify_header                 = random_password.origin_verify.result
   name_prefix                          = local.name_prefix
@@ -113,4 +131,23 @@ module "static_site" {
   origin_request_policy_cors_s3_id     = data.aws_cloudfront_origin_request_policy.cors_s3.id
 
   tags = local.common_tags
+}
+
+################################################################################
+# DNS Cloudflare Module (DNS records, zone settings, redirect rules)
+################################################################################
+
+module "dns_cloudflare" {
+  source = "./modules/dns-cloudflare"
+
+  providers = {
+    cloudflare = cloudflare
+  }
+
+  cloudflare_zone_id             = var.cloudflare_zone_id
+  domain_name                    = var.domain_name
+  cloudfront_domain_name         = module.static_site.cloudfront_domain_name
+  acm_validation_record_name     = module.ssl_certificates.acm_validation_record_name
+  acm_validation_record_value    = module.ssl_certificates.acm_validation_record_value
+  acm_validation_record_type     = module.ssl_certificates.acm_validation_record_type
 }

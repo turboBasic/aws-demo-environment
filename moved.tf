@@ -190,3 +190,61 @@ moved {
   from = aws_s3_bucket_policy.static
   to   = module.static_site.aws_s3_bucket_policy.static
 }
+
+################################################################################
+# SSL Certificates Module Moved Blocks
+################################################################################
+
+moved {
+  from = aws_acm_certificate.demo
+  to   = module.ssl_certificates.aws_acm_certificate.demo
+}
+
+moved {
+  from = aws_acm_certificate_validation.demo
+  to   = module.ssl_certificates.aws_acm_certificate_validation.demo
+}
+
+moved {
+  from = aws_acm_certificate.cloudfront
+  to   = module.ssl_certificates.aws_acm_certificate.cloudfront
+}
+
+moved {
+  from = aws_acm_certificate_validation.cloudfront
+  to   = module.ssl_certificates.aws_acm_certificate_validation.cloudfront
+}
+
+################################################################################
+# DNS Cloudflare Module Relocations
+################################################################################
+
+# ACM validation DNS record moved from root to dns_cloudflare module
+moved {
+  from = module.ssl_certificates.cloudflare_dns_record.acm_validation
+  to   = module.dns_cloudflare.cloudflare_dns_record.acm_validation
+}
+
+# Zone SSL setting moved from ssl_certificates to dns_cloudflare module
+moved {
+  from = module.ssl_certificates.cloudflare_zone_setting.ssl
+  to   = module.dns_cloudflare.cloudflare_zone_setting.ssl
+}
+
+# www to apex redirect ruleset moved from ssl_certificates to dns_cloudflare module
+moved {
+  from = module.ssl_certificates.cloudflare_ruleset.redirect_www
+  to   = module.dns_cloudflare.cloudflare_ruleset.redirect_www
+}
+
+# CloudFront apex domain record moved from root to dns_cloudflare module
+moved {
+  from = cloudflare_dns_record.demo
+  to   = module.dns_cloudflare.cloudflare_dns_record.demo
+}
+
+# CloudFront www subdomain record moved from root to dns_cloudflare module
+moved {
+  from = cloudflare_dns_record.www
+  to   = module.dns_cloudflare.cloudflare_dns_record.www
+}
