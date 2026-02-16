@@ -75,7 +75,7 @@ module "static_site" {
 ## Inputs
 
 | Name | Description | Type | Required |
-|------|-------------|------|----------|
+| ---- | ----------- | ---- | -------- |
 | domain_name | Domain name for CloudFront alias | string | yes |
 | alb_dns_name | ALB DNS name for dynamic origin | string | yes |
 | cloudfront_certificate_arn | ACM certificate ARN (us-east-1) | string | yes |
@@ -91,7 +91,7 @@ module "static_site" {
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | s3_bucket_id | S3 bucket name |
 | s3_bucket_arn | S3 bucket ARN |
 | cloudfront_distribution_id | CloudFront distribution ID |
@@ -179,6 +179,7 @@ aws cloudfront create-invalidation \
 ## Monitoring
 
 Monitor CloudFront metrics via CloudWatch:
+
 - Requests and bytes served
 - Cache hit ratio
 - Origin response time

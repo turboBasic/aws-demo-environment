@@ -65,7 +65,7 @@ module "ecs_fargate" {
 ## Inputs
 
 | Name | Description | Type | Required |
-|------|-------------|------|----------|
+| ---- | ----------- | ---- | -------- |
 | name_prefix | Prefix for resource names | string | yes |
 | vpc_id | VPC ID for security group | string | yes |
 | public_subnet_ids | Public subnet IDs for tasks | list(string) | yes |
@@ -84,7 +84,7 @@ module "ecs_fargate" {
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | cluster_arn | ECS cluster ARN |
 | service_arn | ECS service ARN |
 | service_name | ECS service name |

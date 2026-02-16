@@ -12,7 +12,7 @@ Self-contained EC2 instance with security group configuration for hosting applic
 
 ## Architecture
 
-```
+```plaintext
 ┌──────────────────────────────────────┐
 │      Application Load Balancer       │
 │    (module.application_load_balancer)│
@@ -67,7 +67,7 @@ resource "aws_lb_target_group_attachment" "demo" {
 ## Inputs
 
 | Name | Description | Type | Required |
-|------|-------------|------|----------|
+| ---- | ----------- | ---- | -------- |
 | vpc_id | VPC ID for security group | string | yes |
 | private_subnet_id | Private subnet for EC2 placement | string | yes |
 | instance_type | EC2 instance type | string | no (default: t3.micro) |
@@ -80,7 +80,7 @@ resource "aws_lb_target_group_attachment" "demo" {
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | instance_id | EC2 instance ID |
 | instance_private_ip | Private IP address |
 | instance_arn | EC2 instance ARN |
@@ -104,6 +104,7 @@ resource "aws_lb_target_group_attachment" "demo" {
 The module renders user data internally and accepts page HTML via `html_content`.
 
 Common tasks in user data:
+
 - Install web server (Apache, Nginx)
 - Update system packages
 - Configure monitoring agents
