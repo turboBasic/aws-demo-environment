@@ -15,7 +15,7 @@ Complete S3 and CloudFront infrastructure for serving static and dynamic content
 
 ## Architecture
 
-```
+```plaintext
 Internet / DNS
      │
      ▼
@@ -111,6 +111,7 @@ module "static_site" {
 ## Routing Logic
 
 ### Path `/static/*` → S3
+
 - **Cache Policy:** Managed-CachingOptimized
 - **Origin Request Policy:** Managed-CORS-S3Origin
 - **TTL:** Longer (hours to days)
@@ -118,6 +119,7 @@ module "static_site" {
 - **Use Case:** Static assets (images, CSS, JS, fonts)
 
 ### Path `/` (default) → ALB
+
 - **Cache Policy:** Managed-CachingDisabled
 - **Origin Request Policy:** Managed-AllViewer
 - **TTL:** Minimal (revalidate immediately)
@@ -137,11 +139,13 @@ module "static_site" {
 ## Cost Optimization
 
 **PriceClass_100** (default):
+
 - US, Canada, Europe
 - ~$0.085/GB outbound
 - Lowest cost tier suitable for global audience targeting Americas/Europe
 
 **Price Class Options:**
+
 - `PriceClass_100` - Lowest cost (default)
 - `PriceClass_200` - Medium cost, adds Asia/Pacific
 - `PriceClass_All` - Highest cost, all edge locations
@@ -151,13 +155,13 @@ module "static_site" {
 Upload static files to S3 at path `/static`:
 
 ```bash
-# Using AWS CLI
 aws s3 sync ./assets/static/ \
   s3://ade-dev-static-381492075850/static/ \
   --delete \
   --profile cargonautica
 
-# Using Terraform (aws_s3_object resources in separate module)
+# Invalidate CloudFront distribution cache
+aws cloudfront create-invalidation --distribution-id "$(terraform output -raw cloudfront_distribution_id)" --paths "/*"
 ```
 
 ## Cache Invalidation
