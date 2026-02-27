@@ -10,6 +10,7 @@ locals {
 
   auto_destroy_tags = {
     AutoDestroy = "true"
+    TTL         = "24h"
   }
 
   # Network CIDR blocks

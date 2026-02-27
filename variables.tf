@@ -45,3 +45,15 @@ variable "cloudflare_zone_id" {
   type        = string
   sensitive   = true
 }
+
+variable "obsidian_bucket_name" {
+  description = "The name of the S3 bucket for Obsidian vaults"
+  type        = string
+  default     = "obsidian-sync"
+}
+
+variable "obsidian_iam_user_name" {
+  description = "The name of the IAM user for Obsidian vault access"
+  type        = string
+  default     = "obsidian-sync-user"
+}

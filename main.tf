@@ -173,3 +173,19 @@ module "dns_cloudflare" {
   acm_validation_record_value = module.ssl_certificates.acm_validation_record_value
   acm_validation_record_type  = module.ssl_certificates.acm_validation_record_type
 }
+
+################################################################################
+# Obsidian Vaults Module (for syncing Obsidian vaults using S3 and
+# Remotely Save plugin)
+################################################################################
+
+module "obsidian_vaults" {
+  source = "./modules/obsidian-vaults"
+
+  bucket_name    = var.obsidian_bucket_name
+  iam_user_name  = var.obsidian_iam_user_name
+  name_prefix    = local.name_prefix
+  account_id     = data.aws_caller_identity.current.account_id
+
+  tags = { for k, v in local.common_tags : k => v if k != "TTL" }
+}

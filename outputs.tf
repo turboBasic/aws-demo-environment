@@ -37,3 +37,19 @@ output "s3_static_bucket_arn" {
   description = "S3 bucket ARN for static content"
   value       = module.static_site.s3_bucket_arn
 }
+
+output "obsidian_vault_bucket_name" {
+  description = "S3 bucket name for Obsidian vaults"
+  value = module.obsidian_vaults.bucket_name
+}
+
+output "obsidian_sync_access_key_id" {
+  description = "Access key ID for the IAM user with access to the Obsidian vaults S3 bucket"
+  value = module.obsidian_vaults.access_key_id
+}
+
+output "obsidian_sync_secret_access_key" {
+  description = "Secret access key for the IAM user with access to the Obsidian vaults S3 bucket"
+  value     = module.obsidian_vaults.secret_access_key
+  sensitive = true
+}
