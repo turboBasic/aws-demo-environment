@@ -8,11 +8,17 @@ Ephemeral demo environment deployed on AWS. Auto-destroys after 24 hours via a L
 flowchart TD
     User([User])
         User -->|HTTPS| CF
+        User -->|S3 API| S3Personal
     CF["Cloudflare DNS"]
         CF -->|CNAME| CDN
     CDN["CloudFront <br/> CDN · TLS termination"]
         CDN -->|"default · HTTPS + origin verify"| ALB
         CDN -->|"/static/* · OAC"| S3Static
+
+    EB["EventBridge <br/> hourly schedule"] --> Destroyer["Lambda destroyer <br/> destroys only TTL-tagged resources (ALB, ECS, NAT Gateway etc.)"]
+    %% Destroyer -->|destroys| ALB
+    %% Destroyer -->|destroys| ECS
+    %% Destroyer -->|destroys| NATgw
 
     subgraph VPC["VPC 10.0.0.0/16"]
         ALB["Application Load Balancer"]
@@ -44,6 +50,7 @@ flowchart TD
     subgraph S3["S3 buckets"]
         S3Obsidian[("Obsidian vaults")]
         S3Static[("Static site content")]
+        S3Personal[("00-personal")]
     end
 
     ALBnodeA  -->|HTTP| WebApp
@@ -69,6 +76,7 @@ Bootstrap infrastructure must be applied first — see [bootstrap/README.md](boo
 | `ssl_certificates` | `./modules/ssl-certificates` | ACM certificates (regional + us-east-1 for CloudFront) |
 | `static_site` | `./modules/static-site` | S3 origin bucket, CloudFront distribution |
 | `dns_cloudflare` | `./modules/dns-cloudflare` | Cloudflare DNS records, ACM DNS validation |
+| `generic_storage` | `./modules/generic-storage` | IAM user with MFA-enforced S3 role |
 | `obsidian_vaults` | `./modules/obsidian-vaults` | S3 bucket + IAM user for Obsidian vault sync |
 
 ## Usage
@@ -125,12 +133,44 @@ terraform destroy
 | `obsidian_vault_bucket_name` | S3 bucket name for Obsidian vaults | no |
 | `obsidian_sync_access_key_id` | IAM access key ID for Obsidian sync | no |
 | `obsidian_sync_secret_access_key` | IAM secret access key for Obsidian sync | **yes** |
+| `generic_storage_access_key_id` | Access key ID for the s3-user IAM account | no |
+| `generic_storage_secret_access_key` | Secret access key for the s3-user (MFA-backed) | **yes** |
+| `generic_storage_role_arn` | ARN of the S3AccessRole with MFA enforcement | no |
 
 Retrieve sensitive outputs with:
 
 ```bash
 terraform output -raw obsidian_sync_secret_access_key
+terraform output -raw generic_storage_secret_access_key
 ```
+
+## Generic Storage (S3 User with MFA)
+
+The `generic_storage` module creates an IAM user with MFA-enforced S3 access. This setup provides:
+
+- **s3-user** — IAM user for programmatic S3 access
+- **Access Keys** — For AWS CLI and SDK authentication
+- **S3AccessRole** — MFA-enforced role for elevated S3 permissions
+- **MFA Requirement** — Role assumption requires Multi-Factor Authentication
+
+### Setup Workflow
+
+**After `terraform apply`**, set up MFA for the s3-user:
+
+```bash
+# 1. Register MFA device (saves credentials to 1Password)
+./scripts/setup-s3-user-mfa.sh --cleanup
+
+# 2. Follow the prompted instructions to enable MFA
+# 3. Access Terraform outputs
+terraform output generic_storage_access_key_id
+terraform output -raw generic_storage_secret_access_key
+terraform output generic_storage_role_arn
+```
+
+### AWS CLI Usage
+
+See [modules/generic-storage/README.md](modules/generic-storage/README.md) for AWS CLI profile configuration, usage examples, and the rationale for the two-profile setup.
 
 ## Obsidian Vault Sync
 
@@ -177,7 +217,10 @@ aws-demo-environment/
 │   ├── ssl-certificates/
 │   ├── static-site/
 │   ├── dns-cloudflare/
+│   ├── generic-storage/
 │   └── obsidian-vaults/
+├── scripts/
+│   └── setup-s3-user-mfa.sh     # MFA setup script for s3-user
 └── bootstrap/       # Persistent infra (state backend, Lambda destroyer)
 ```
 

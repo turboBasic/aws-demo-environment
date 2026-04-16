@@ -175,6 +175,17 @@ module "dns_cloudflare" {
 }
 
 ################################################################################
+# Generic Storage Module (S3 IAM user with MFA-enforced role)
+################################################################################
+
+module "generic_storage" {
+  source = "./modules/generic-storage"
+
+  user_name   = "s3-user"
+  bucket_name = "00-personal"
+}
+
+################################################################################
 # Obsidian Vaults Module (for syncing Obsidian vaults using S3 and
 # Remotely Save plugin)
 ################################################################################
