@@ -167,6 +167,7 @@ aws cloudfront create-invalidation --distribution-id "$(terraform output -raw cl
 ## Cache Invalidation
 
 When updating static files:
+<!-- cspell:ignore E1E23QKYQBHFUB -->
 
 ```bash
 # Invalidate CloudFront cache
