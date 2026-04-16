@@ -1,0 +1,22 @@
+# Local project dictionary words
+# One word per line
+
+cargonautica
+cloudflare
+fargate
+hostnames
+mgmt
+obsidian
+tflock
+turboBasic
+unproxied
+zbar
+
+# AWS API words
+eipalloc
+elbv
+eventbridge
+keepalive
+natgateway
+resourcegroupstaggingapi
+targetgroup
