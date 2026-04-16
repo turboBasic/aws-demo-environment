@@ -48,6 +48,26 @@ output "obsidian_sync_access_key_id" {
   value = module.obsidian_vaults.access_key_id
 }
 
+################################################################################
+# Generic Storage (S3 User with MFA) Outputs
+################################################################################
+
+output "generic_storage_access_key_id" {
+  description = "Access key ID for the s3-user IAM account"
+  value       = module.generic_storage.access_key_id
+}
+
+output "generic_storage_secret_access_key" {
+  description = "Secret access key for the s3-user IAM account (sensitive)"
+  value       = module.generic_storage.secret_access_key
+  sensitive   = true
+}
+
+output "generic_storage_role_arn" {
+  description = "ARN of the S3AccessRole with MFA enforcement"
+  value       = module.generic_storage.role_arn
+}
+
 output "obsidian_sync_secret_access_key" {
   description = "Secret access key for the IAM user with access to the Obsidian vaults S3 bucket"
   value     = module.obsidian_vaults.secret_access_key
