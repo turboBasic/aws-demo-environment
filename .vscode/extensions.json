@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "bierner.markdown-mermaid",
+    "bpruitt-goddard.mermaid-markdown-syntax-highlighting",
+    "editorconfig.editorconfig",
+    "hashicorp.terraform",
+    "shd101wyy.markdown-preview-enhanced",
+    "streetsidesoftware.code-spell-checker-cspell-bundled-dictionaries",
+    "tylerharris.terraform-link-docs",
+  ]
+}
