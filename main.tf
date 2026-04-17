@@ -1,35 +1,3 @@
-terraform {
-  required_version = ">= 1.14"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 6.30"
-    }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 5"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
-}
-
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
-
 ################################################################################
 # Origin Verification Header (for ALB origin protection in CloudFront)
 ################################################################################
@@ -193,10 +161,10 @@ module "generic_storage" {
 module "obsidian_vaults" {
   source = "./modules/obsidian-vaults"
 
-  bucket_name    = var.obsidian_bucket_name
-  iam_user_name  = var.obsidian_iam_user_name
-  name_prefix    = local.name_prefix
-  account_id     = data.aws_caller_identity.current.account_id
+  bucket_name   = var.obsidian_bucket_name
+  iam_user_name = var.obsidian_iam_user_name
+  name_prefix   = local.name_prefix
+  account_id    = data.aws_caller_identity.current.account_id
 
   tags = { for k, v in local.common_tags : k => v if k != "TTL" }
 }

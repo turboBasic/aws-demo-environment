@@ -32,7 +32,7 @@ locals {
   </html>
   HTML
 
-  resolved_html      = var.html_content != "" ? var.html_content : local.default_html
+  resolved_html = var.html_content != "" ? var.html_content : local.default_html
   rendered_user_data = templatefile("${path.module}/user_data.sh.tftpl", {
     html_content = local.resolved_html
   })

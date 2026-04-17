@@ -93,7 +93,9 @@ terraform destroy       # Tear down all resources (requires confirmation)
 
 ```text
 aws-demo-environment/
-├── main.tf                          # Root module: providers, module calls
+├── main.tf                          # Root module: resources and module calls
+├── versions.tf                      # Terraform version and provider requirements
+├── providers.tf                     # Provider configurations (aws, cloudflare)
 ├── variables.tf                     # Root variables
 ├── outputs.tf                       # Root outputs
 ├── backend.tf                       # S3 backend configuration
