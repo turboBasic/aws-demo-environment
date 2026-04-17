@@ -157,6 +157,31 @@ Example: `fix(ci): handle missing env variable`
 - **Tagging**: tag all resources via `common_tags` from `locals.tf` (root) or `bootstrap/locals.tf`
 - **Security groups**: use standalone `aws_vpc_security_group_ingress_rule` / `aws_vpc_security_group_egress_rule` resources (provider 6.x best practice — avoids rule conflicts)
 
+### Pre-commit
+
+The project uses [pre-commit](https://pre-commit.com) to enforce formatting and linting. Configured hooks:
+
+| Hook                  | Scope                          |
+| --------------------- | ------------------------------ |
+| `terraform_fmt`       | All `.tf` and `.tfvars` files  |
+| `terraform_validate`  | Terraform modules              |
+| `yamllint`            | YAML files                     |
+| `pymarkdown`          | Markdown files                 |
+| `shellcheck`          | Shell scripts                  |
+| `actionlint`          | GitHub Actions workflows       |
+
+Enable in a fresh clone:
+
+```bash
+pre-commit install
+```
+
+Run against specific files (faster than `--all-files`):
+
+```bash
+pre-commit run --files path/to/file1 path/to/file2
+```
+
 ### Formatting (Source of Truth)
 
 - Follow `.editorconfig` in the repository root for formatting rules.
@@ -184,7 +209,7 @@ Do this as part of the same change that adds the first file of that type.
 
 - **Minimal changes**: prefer targeted edits over large refactors unless explicitly asked
 - **Follow existing patterns**: read the surrounding code before suggesting changes
-- **Formatting and linting**: after modifying any source file, always run the formatter and linter for the affected file type and fix any issues your change introduced before finishing
+- **Pre-commit validation**: after modifying any source file, run `pre-commit run --files <changed files>` and fix every reported issue before finishing — do not skip or bypass hooks
 - **No secrets**: never generate tokens, passwords, or credentials — use GitHub Actions secrets
 - **Skills source of truth**: keep shared skills only in `.claude/skills/`; GitHub Copilot must use these shared skills and must not duplicate skill definitions under `.github/skills/`
 - **Commit messages**: use Conventional Commits format `type(scope): subject` (e.g. `fix(ci): handle missing env variable`), with an imperative subject and no trailing period

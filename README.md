@@ -2,6 +2,8 @@
 
 Ephemeral demo environment deployed on AWS. Auto-destroys after 24 hours via a Lambda function scheduled by EventBridge. Re-running `terraform apply` resets the 24h timer.
 
+> **Developers**: review [docs/ai-instructions.md](docs/ai-instructions.md) for project structure, coding conventions, and linting rules.
+
 ## Architecture
 
 ```mermaid
@@ -57,6 +59,17 @@ flowchart TD
     ALBnodeA  -->|HTTP| ECS
 
 ```
+
+## Development Setup
+
+Install [pre-commit](https://pre-commit.com) and enable the hooks for this repo:
+
+```bash
+brew install pre-commit   # macOS · or: pip install pre-commit
+pre-commit install        # enable hooks (once per clone)
+```
+
+For the full list of configured hooks, see [docs/ai-instructions.md](docs/ai-instructions.md#pre-commit).
 
 ## Prerequisites
 
@@ -202,29 +215,10 @@ Configure the Remotely Save plugin with:
 
 ## File Structure
 
-```text
-aws-demo-environment/
-├── main.tf          # Provider config, module invocations
-├── variables.tf     # Input variables
-├── outputs.tf       # Output values
-├── locals.tf        # name_prefix, common_tags, CIDR constants
-├── data.tf          # AZs, AMI, caller identity, region
-├── backend.tf       # S3 backend (configured from bootstrap outputs)
-├── modules/
-│   ├── networking/
-│   ├── application-load-balancer/
-│   ├── ecs-fargate/
-│   ├── ssl-certificates/
-│   ├── static-site/
-│   ├── dns-cloudflare/
-│   ├── generic-storage/
-│   └── obsidian-vaults/
-├── scripts/
-│   └── setup-s3-user-mfa.sh     # MFA setup script for s3-user
-└── bootstrap/       # Persistent infra (state backend, Lambda destroyer)
-```
+See [docs/ai-instructions.md](docs/ai-instructions.md#project-structure) for the annotated project structure.
 
 ## References
 
 - [Bootstrap README](bootstrap/README.md) — first-time setup
+- [Coding conventions & project structure](docs/ai-instructions.md)
 - [Architecture plan](.claude/plans/04-00-aws-demo-environment-architecture.md)
