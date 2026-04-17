@@ -14,7 +14,7 @@ Complete ALB infrastructure with multi-AZ deployment, SSL/HTTPS termination, and
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────┐
 │         Internet / CloudFront            │
 └───────────────────┬──────────────────────┘
@@ -118,10 +118,12 @@ module "alb" {
 ## Listener Configuration
 
 ### HTTP Listener (Port 80)
+
 - Default action: Redirect to HTTPS (HTTP 301)
 - Allows unencrypted traffic to be upgraded automatically
 
 ### HTTPS Listener (Port 443)
+
 - Uses provided SSL certificate for TLS termination
 - Default action: Fixed response (403) for direct access
 - Listener rule: Forward to target group only if `X-Origin-Verify` header matches

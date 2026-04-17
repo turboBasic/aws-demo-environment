@@ -14,7 +14,7 @@ Complete VPC networking infrastructure for AWS applications with optional NAT Ga
 
 ## Architecture
 
-```
+```text
 ┌───────────────────────────────────────────────────────────┐
 │                         VPC (10.0.0.0/16)                 │
 │                                                           │
@@ -76,35 +76,36 @@ module "networking" {
 
 ## Inputs
 
-| Name | Description | Type | Required |
-|------|-------------|------|----------|
-| vpc_cidr | CIDR block for the VPC | string | yes |
-| public_subnet_cidrs | CIDR blocks for public subnets | list(string) | yes |
-| private_subnet_cidrs | CIDR blocks for private subnets | list(string) | yes |
-| region | AWS region for service endpoints | string | yes |
-| name_prefix | Prefix for resource names | string | yes |
-| create_nat_gateway | Enable NAT Gateway (adds ~$1/day cost) | bool | no (default: false) |
-| tags | Common tags for all resources | map(string) | no |
-| auto_destroy_tags | Tags for ephemeral resources | map(string) | no |
+| Name                 | Description                            | Type         | Required            |
+| -------------------- | -------------------------------------- | ------------ | ------------------- |
+| vpc_cidr             | CIDR block for the VPC                 | string       | yes                 |
+| public_subnet_cidrs  | CIDR blocks for public subnets         | list(string) | yes                 |
+| private_subnet_cidrs | CIDR blocks for private subnets        | list(string) | yes                 |
+| region               | AWS region for service endpoints       | string       | yes                 |
+| name_prefix          | Prefix for resource names              | string       | yes                 |
+| create_nat_gateway   | Enable NAT Gateway (adds ~$1/day cost) | bool         | no (default: false) |
+| tags                 | Common tags for all resources          | map(string)  | no                  |
+| auto_destroy_tags    | Tags for ephemeral resources           | map(string)  | no                  |
 
 ## Outputs
 
-| Name | Description |
-|------|-------------|
-| vpc_id | VPC identifier |
-| vpc_cidr_block | VPC CIDR block |
-| public_subnet_ids | List of public subnet IDs |
-| private_subnet_ids | List of private subnet IDs |
-| nat_gateway_id | NAT Gateway identifier (null if disabled) |
-| nat_eip_id | NAT Gateway Elastic IP ID (null if disabled) |
-| nat_eip_public_ip | NAT Gateway public IP (null if disabled) |
-| public_route_table_id | Public route table ID |
-| private_route_table_id | Private route table ID |
-| s3_vpc_endpoint_id | S3 VPC endpoint ID |
+| Name                   | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| vpc_id                 | VPC identifier                               |
+| vpc_cidr_block         | VPC CIDR block                               |
+| public_subnet_ids      | List of public subnet IDs                    |
+| private_subnet_ids     | List of private subnet IDs                   |
+| nat_gateway_id         | NAT Gateway identifier (null if disabled)    |
+| nat_eip_id             | NAT Gateway Elastic IP ID (null if disabled) |
+| nat_eip_public_ip      | NAT Gateway public IP (null if disabled)     |
+| public_route_table_id  | Public route table ID                        |
+| private_route_table_id | Private route table ID                       |
+| s3_vpc_endpoint_id     | S3 VPC endpoint ID                           |
 
 ## Resources Created
 
 ### Always Created
+
 - 1 VPC
 - 1 Internet Gateway
 - 2 Public Subnets (multi-AZ)
@@ -114,6 +115,7 @@ module "networking" {
 - 1 S3 VPC Gateway Endpoint
 
 ### Conditionally Created (when `create_nat_gateway = true`)
+
 - 1 Elastic IP (for NAT)
 - 1 NAT Gateway
 - 1 Route (0.0.0.0/0 → NAT Gateway in private route table)

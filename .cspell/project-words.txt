@@ -2,6 +2,7 @@
 # One word per line
 cargonautica
 cloudflare
+creds
 fargate
 hostnames
 mgmt

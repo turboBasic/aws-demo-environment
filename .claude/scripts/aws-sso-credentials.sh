@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2155
+# shellcheck disable=SC2155,SC2250,SC2317
 
 # Extract and export temporary AWS credentials from SSO cache
 # Usage: source aws-sso-credentials.sh
@@ -39,7 +39,8 @@ CREDS=$(aws sso get-role-credentials \
   --access-token "$ACCESS_TOKEN" \
   --region "$SSO_REGION" 2>/dev/null)
 
-if [ $? -ne 0 ]; then
+# shellcheck disable=SC2181
+if [[ $? -ne 0 ]]; then
   echo "❌ Error: Failed to get role credentials"
   echo "   Your SSO session may have expired"
   echo "   Run: aws sso login --profile cargonautica"

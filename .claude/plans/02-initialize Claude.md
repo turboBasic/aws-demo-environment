@@ -7,6 +7,7 @@ Set up Claude Code instructions and configurations for the project
 ## Steps
 
 - [x] Create `.claude/settings.json` configuration file with the contents:
+
   ```json
   {
     "permissions": {
@@ -18,7 +19,9 @@ Set up Claude Code instructions and configurations for the project
     }
   }
   ```
+
 - [x] Create `CLAUDE.md` — Terraform commands, project structure, conventions with the contents similar to:
+
   ```markdown
   # AWS Demo Environment
 
@@ -76,6 +79,7 @@ Set up Claude Code instructions and configurations for the project
   - Use Conventional commits standard for commit messages
   - For Terraform code use conventions provided in @.claude/plans/04-00-aws-demo-environment-architecture.md file, section "Conventions"
   ```
+
 - [x] Commit Claude Code files: `.claude`, `CLAUDE.md`, `docs/claude`
-  
+
 ## Status: Completed

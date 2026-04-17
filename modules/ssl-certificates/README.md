@@ -25,4 +25,3 @@ Manages ACM SSL certificates for regional and CloudFront distributions.
 - Both regional and CloudFront certificates validate with the same DNS record
 - Validation record details are exported to `dns-cloudflare` module for actual DNS record creation
 - Validation filters to base domain only (excludes wildcard *.domain)
-

@@ -68,16 +68,16 @@ Bootstrap infrastructure must be applied first — see [bootstrap/README.md](boo
 
 ## Modules
 
-| Module | Source | Purpose |
-| ------ | ------ | ------- |
-| `networking` | `./modules/networking` | VPC, subnets, IGW, optional NAT Gateway, S3 VPC endpoint |
-| `application_load_balancer` | `./modules/application-load-balancer` | ALB, target group, HTTPS listener, security groups |
-| `ecs_fargate` | `./modules/ecs-fargate` | ECS cluster, Fargate service, task definition |
-| `ssl_certificates` | `./modules/ssl-certificates` | ACM certificates (regional + us-east-1 for CloudFront) |
-| `static_site` | `./modules/static-site` | S3 origin bucket, CloudFront distribution |
-| `dns_cloudflare` | `./modules/dns-cloudflare` | Cloudflare DNS records, ACM DNS validation |
-| `generic_storage` | `./modules/generic-storage` | IAM user with MFA-enforced S3 role |
-| `obsidian_vaults` | `./modules/obsidian-vaults` | S3 bucket + IAM user for Obsidian vault sync |
+| Module                      | Source                                | Purpose                                                  |
+| --------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| `networking`                | `./modules/networking`                | VPC, subnets, IGW, optional NAT Gateway, S3 VPC endpoint |
+| `application_load_balancer` | `./modules/application-load-balancer` | ALB, target group, HTTPS listener, security groups       |
+| `ecs_fargate`               | `./modules/ecs-fargate`               | ECS cluster, Fargate service, task definition            |
+| `ssl_certificates`          | `./modules/ssl-certificates`          | ACM certificates (regional + us-east-1 for CloudFront)   |
+| `static_site`               | `./modules/static-site`               | S3 origin bucket, CloudFront distribution                |
+| `dns_cloudflare`            | `./modules/dns-cloudflare`            | Cloudflare DNS records, ACM DNS validation               |
+| `generic_storage`           | `./modules/generic-storage`           | IAM user with MFA-enforced S3 role                       |
+| `obsidian_vaults`           | `./modules/obsidian-vaults`           | S3 bucket + IAM user for Obsidian vault sync             |
 
 ## Usage
 
@@ -105,37 +105,37 @@ terraform destroy
 
 ## Inputs
 
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|----------|
-| `aws_region` | AWS region to deploy resources | `string` | `"eu-central-1"` | no |
-| `environment` | Environment name | `string` | `"demo"` | no |
-| `project_name` | Project name for resource naming and tagging | `string` | `"aws-demo"` | no |
-| `vpc_cidr` | CIDR block for the VPC | `string` | `"10.0.0.0/16"` | no |
-| `create_nat_gateway` | Create NAT Gateway for private subnet internet access (~$1/day) | `bool` | `false` | no |
-| `domain_name` | Domain name for ACM certificate and CloudFront | `string` | `"turbobasic.dev"` | no |
-| `cloudflare_api_token` | Cloudflare API token | `string` | — | **yes** |
-| `cloudflare_zone_id` | Cloudflare zone ID | `string` | — | **yes** |
-| `obsidian_bucket_name` | S3 bucket name suffix for Obsidian vaults | `string` | `"obsidian-sync"` | no |
-| `obsidian_iam_user_name` | IAM user name for Obsidian vault access | `string` | `"obsidian-sync-user"` | no |
+| Name                     | Description                                                     | Type     | Default                | Required |
+| ------------------------ | --------------------------------------------------------------- | -------- | ---------------------- | -------- |
+| `aws_region`             | AWS region to deploy resources                                  | `string` | `"eu-central-1"`       | no       |
+| `environment`            | Environment name                                                | `string` | `"demo"`               | no       |
+| `project_name`           | Project name for resource naming and tagging                    | `string` | `"aws-demo"`           | no       |
+| `vpc_cidr`               | CIDR block for the VPC                                          | `string` | `"10.0.0.0/16"`        | no       |
+| `create_nat_gateway`     | Create NAT Gateway for private subnet internet access (~$1/day) | `bool`   | `false`                | no       |
+| `domain_name`            | Domain name for ACM certificate and CloudFront                  | `string` | `"turbobasic.dev"`     | no       |
+| `cloudflare_api_token`   | Cloudflare API token                                            | `string` | —                      | **yes**  |
+| `cloudflare_zone_id`     | Cloudflare zone ID                                              | `string` | —                      | **yes**  |
+| `obsidian_bucket_name`   | S3 bucket name suffix for Obsidian vaults                       | `string` | `"obsidian-sync"`      | no       |
+| `obsidian_iam_user_name` | IAM user name for Obsidian vault access                         | `string` | `"obsidian-sync-user"` | no       |
 
 ## Outputs
 
-| Name | Description | Sensitive |
-|------|-------------|-----------|
-| `alb_dns_name` | DNS name of the Application Load Balancer | no |
-| `vpc_id` | ID of the VPC | no |
-| `ecs_cluster_name` | ECS cluster name | no |
-| `ecs_service_name` | ECS service name | no |
-| `cloudfront_distribution_id` | CloudFront distribution ID | no |
-| `cloudfront_domain_name` | CloudFront distribution domain name | no |
-| `s3_static_bucket_name` | S3 bucket name for static site content | no |
-| `s3_static_bucket_arn` | S3 bucket ARN for static site content | no |
-| `obsidian_vault_bucket_name` | S3 bucket name for Obsidian vaults | no |
-| `obsidian_sync_access_key_id` | IAM access key ID for Obsidian sync | no |
-| `obsidian_sync_secret_access_key` | IAM secret access key for Obsidian sync | **yes** |
-| `generic_storage_access_key_id` | Access key ID for the s3-user IAM account | no |
-| `generic_storage_secret_access_key` | Secret access key for the s3-user (MFA-backed) | **yes** |
-| `generic_storage_role_arn` | ARN of the S3AccessRole with MFA enforcement | no |
+| Name                                | Description                                    | Sensitive |
+| ----------------------------------- | ---------------------------------------------- | --------- |
+| `alb_dns_name`                      | DNS name of the Application Load Balancer      | no        |
+| `vpc_id`                            | ID of the VPC                                  | no        |
+| `ecs_cluster_name`                  | ECS cluster name                               | no        |
+| `ecs_service_name`                  | ECS service name                               | no        |
+| `cloudfront_distribution_id`        | CloudFront distribution ID                     | no        |
+| `cloudfront_domain_name`            | CloudFront distribution domain name            | no        |
+| `s3_static_bucket_name`             | S3 bucket name for static site content         | no        |
+| `s3_static_bucket_arn`              | S3 bucket ARN for static site content          | no        |
+| `obsidian_vault_bucket_name`        | S3 bucket name for Obsidian vaults             | no        |
+| `obsidian_sync_access_key_id`       | IAM access key ID for Obsidian sync            | no        |
+| `obsidian_sync_secret_access_key`   | IAM secret access key for Obsidian sync        | **yes**   |
+| `generic_storage_access_key_id`     | Access key ID for the s3-user IAM account      | no        |
+| `generic_storage_secret_access_key` | Secret access key for the s3-user (MFA-backed) | **yes**   |
+| `generic_storage_role_arn`          | ARN of the S3AccessRole with MFA enforcement   | no        |
 
 Retrieve sensitive outputs with:
 
@@ -180,29 +180,29 @@ Unlike the rest of the demo environment, these resources are **not tagged for au
 
 Configure the Remotely Save plugin with:
 
-| Setting | Value |
-|---------|-------|
-| Remote service | S3 |
-| Endpoint | `s3.eu-central-1.amazonaws.com` (or your region) |
-| Region | `eu-central-1` |
-| Bucket name | value of `obsidian_vault_bucket_name` output |
-| Access key ID | value of `obsidian_sync_access_key_id` output |
+| Setting           | Value                                             |
+| ----------------- | ------------------------------------------------- |
+| Remote service    | S3                                                |
+| Endpoint          | `s3.eu-central-1.amazonaws.com` (or your region)  |
+| Region            | `eu-central-1`                                    |
+| Bucket name       | value of `obsidian_vault_bucket_name` output      |
+| Access key ID     | value of `obsidian_sync_access_key_id` output     |
 | Secret access key | value of `obsidian_sync_secret_access_key` output |
 
 ## Cost Estimate
 
-| Resource | Cost |
-|----------|------|
-| ALB | ~$0.70/day |
-| ECS Fargate (0.25 vCPU, 0.5 GB) | ~$0.10/day |
-| CloudFront | ~$0.01/day (minimal traffic) |
-| NAT Gateway (if enabled) | ~$1.10/day |
-| S3 (state + static site + Obsidian) | <$0.01/day |
-| **Total (without NAT)** | **~$0.81/day** |
+| Resource                            | Cost                         |
+| ----------------------------------- | ---------------------------- |
+| ALB                                 | ~$0.70/day                   |
+| ECS Fargate (0.25 vCPU, 0.5 GB)     | ~$0.10/day                   |
+| CloudFront                          | ~$0.01/day (minimal traffic) |
+| NAT Gateway (if enabled)            | ~$1.10/day                   |
+| S3 (state + static site + Obsidian) | <$0.01/day                   |
+| **Total (without NAT)**             | **~$0.81/day**               |
 
 ## File Structure
 
-```
+```text
 aws-demo-environment/
 ├── main.tf          # Provider config, module invocations
 ├── variables.tf     # Input variables

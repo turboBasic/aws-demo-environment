@@ -1,3 +1,4 @@
+<!-- pyml disable md025 -->
 # AI Instructions
 
 > **Single source of truth for AI coding instructions.**

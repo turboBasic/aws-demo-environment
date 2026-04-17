@@ -16,7 +16,7 @@ This module sets up:
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐
 │   s3-user IAM   │
 │     Account     │

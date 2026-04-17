@@ -1,3 +1,4 @@
+<!-- pyml disable MD036 -->
 # ECS Fargate Module
 
 Self-contained ECS Fargate service with ALB integration for containerized workloads.
@@ -64,32 +65,32 @@ module "ecs_fargate" {
 
 ## Inputs
 
-| Name | Description | Type | Required |
-| ---- | ----------- | ---- | -------- |
-| name_prefix | Prefix for resource names | string | yes |
-| vpc_id | VPC ID for security group | string | yes |
-| public_subnet_ids | Public subnet IDs for tasks | list(string) | yes |
-| alb_security_group_id | ALB security group for ingress | string | yes |
-| target_group_arn | ALB target group ARN | string | yes |
-| region | AWS region for CloudWatch logs | string | yes |
-| container_image | Docker image | string | no (default: httpd:2.4) |
-| container_port | Container port | number | no (default: 80) |
-| task_cpu | CPU units (256, 512, 1024, etc.) | string | no (default: 256) |
-| task_memory | Memory in MB | string | no (default: 512) |
-| desired_count | Number of tasks | number | no (default: 1) |
-| environment_variables | Container environment vars | list(object) | no |
-| tags | Common tags | map(string) | no |
-| auto_destroy_tags | Tags for auto-destroy (applied to expensive resources) | map(string) | no |
+| Name                  | Description                                            | Type         | Required                |
+| --------------------- | ------------------------------------------------------ | ------------ | ----------------------- |
+| name_prefix           | Prefix for resource names                              | string       | yes                     |
+| vpc_id                | VPC ID for security group                              | string       | yes                     |
+| public_subnet_ids     | Public subnet IDs for tasks                            | list(string) | yes                     |
+| alb_security_group_id | ALB security group for ingress                         | string       | yes                     |
+| target_group_arn      | ALB target group ARN                                   | string       | yes                     |
+| region                | AWS region for CloudWatch logs                         | string       | yes                     |
+| container_image       | Docker image                                           | string       | no (default: httpd:2.4) |
+| container_port        | Container port                                         | number       | no (default: 80)        |
+| task_cpu              | CPU units (256, 512, 1024, etc.)                       | string       | no (default: 256)       |
+| task_memory           | Memory in MB                                           | string       | no (default: 512)       |
+| desired_count         | Number of tasks                                        | number       | no (default: 1)         |
+| environment_variables | Container environment vars                             | list(object) | no                      |
+| tags                  | Common tags                                            | map(string)  | no                      |
+| auto_destroy_tags     | Tags for auto-destroy (applied to expensive resources) | map(string)  | no                      |
 
 ## Outputs
 
-| Name | Description |
-| ---- | ----------- |
-| cluster_arn | ECS cluster ARN |
-| service_arn | ECS service ARN |
-| service_name | ECS service name |
-| security_group_id | Security group ID |
-| log_group_name | CloudWatch log group name |
+| Name              | Description               |
+| ----------------- | ------------------------- |
+| cluster_arn       | ECS cluster ARN           |
+| service_arn       | ECS service ARN           |
+| service_name      | ECS service name          |
+| security_group_id | Security group ID         |
+| log_group_name    | CloudWatch log group name |
 
 ## Resources Created
 
