@@ -27,10 +27,13 @@ Other key design principles are provided in @.claude/plans/04-00-aws-demo-enviro
 
 ## Tech Stack
 
-| Tool             | Version / Notes |
-| ---------------- | --------------- |
-| Primary language | Terraform (HCL) |
-| CI               | GitHub Actions  |
+| Tool             | Version / Notes                                                      |
+| ---------------- | -------------------------------------------------------------------- |
+| Primary language | Terraform (HCL)                                                      |
+| Task runner      | `make` (see [Makefile](../Makefile))                                 |
+| Python toolchain | [`uv`](https://docs.astral.sh/uv/) — dev deps in `pyproject.toml`    |
+| Tool versioning  | [`mise`](https://mise.jdx.dev) — pins `terraform`, `uv`, etc.        |
+| CI               | GitHub Actions                                                       |
 
 ## Workflow
 
@@ -49,6 +52,34 @@ terraform apply
 
 # 2. Demo auto-destroys after 24h (or manually: terraform destroy)
 ```
+
+## Make targets
+
+The [Makefile](../Makefile) wraps the most common dev tasks. All targets execute through
+`mise exec -- uv` so they use the mise-pinned `uv` and the uv-managed virtualenv.
+
+```bash
+make help        # list all targets
+make install     # uv sync --frozen  — install dev deps from uv.lock
+make lock        # uv lock           — regenerate uv.lock after editing pyproject.toml
+make lint        # uv run pre-commit run --all-files
+```
+
+Typical bootstrap in a fresh clone:
+
+```bash
+make install            # creates .venv and installs pre-commit from uv.lock
+mise exec -- uv run pre-commit install   # enable git hooks
+```
+
+After editing `pyproject.toml` (adding/removing/bumping a Python dev dep):
+
+```bash
+make lock && make install   # regenerate uv.lock and re-sync .venv
+```
+
+`make install` uses `--frozen`, so it will fail fast if `uv.lock` is missing or
+out of sync with `pyproject.toml` — this is intentional and enforces reproducible installs.
 
 ## AWS Authentication
 
@@ -104,6 +135,11 @@ aws-demo-environment/
 ├── moved.tf                         # Terraform moved blocks for resource renames
 ├── terraform.tfvars.example         # Example variable values
 ├── terraform.tfvars                 # Local variable values (gitignored)
+├── Makefile                         # Dev task runner (install, lock, lint)
+├── pyproject.toml                   # Python dev dependency manifest (uv)
+├── uv.lock                          # uv lockfile — committed for reproducibility
+├── .mise.toml                       # Pinned tool versions (terraform, uv, …)
+├── .pre-commit-config.yaml          # Pre-commit hook definitions
 ├── README.md                        # Project documentation
 ├── CLAUDE.md                        # Claude Code instructions
 ├── assets/
@@ -124,7 +160,8 @@ aws-demo-environment/
 │   └── web-instance/                # EC2 instance with user_data template
 │       └── user_data.sh.tftpl       # httpd install + demo HTML template
 ├── scripts/
-│   └── setup-s3-user-mfa.sh        # Helper to configure MFA for S3 IAM user
+│   ├── setup-s3-user-mfa.sh         # Helper to configure MFA for S3 IAM user
+│   └── terraform-validate-module.sh # Pre-commit helper: validate one Terraform module
 ├── docs/
 │   └── ai-instructions.md           # AI coding instructions (source of truth)
 └── bootstrap/
@@ -158,28 +195,38 @@ Example: `fix(ci): handle missing env variable`
 
 ### Pre-commit
 
-The project uses [pre-commit](https://pre-commit.com) to enforce formatting and linting. Configured hooks:
+The project uses [pre-commit](https://pre-commit.com) to enforce formatting and linting.
+`pre-commit` itself is installed as a Python dev dependency via `uv` — see the
+[Make targets](#make-targets) section for the install flow. Configured hooks:
 
-| Hook                  | Scope                          |
-| --------------------- | ------------------------------ |
-| `terraform_fmt`       | All `.tf` and `.tfvars` files  |
-| `terraform_validate`  | Terraform modules              |
-| `yamllint`            | YAML files                     |
-| `pymarkdown`          | Markdown files                 |
-| `shellcheck`          | Shell scripts                  |
-| `actionlint`          | GitHub Actions workflows       |
+| Hook                            | Scope                                                 |
+| ------------------------------- | ----------------------------------------------------- |
+| `terraform_fmt`                 | All `.tf` and `.tfvars` files                         |
+| `terraform-validate-root`       | Root module (local hook, skips `bootstrap/`)          |
+| `terraform-validate-bootstrap`  | `bootstrap/` module (local hook)                      |
+| `yamllint`                      | YAML files                                            |
+| `pymarkdown`                    | Markdown files                                        |
+| `shellcheck`                    | Shell scripts                                         |
+| `actionlint`                    | GitHub Actions workflows                              |
 
-Enable in a fresh clone:
+Both `terraform-validate-*` hooks call [scripts/terraform-validate-module.sh](../scripts/terraform-validate-module.sh),
+which runs `terraform validate` through the repo-pinned `terraform` (via `mise exec`)
+against a single module. Root and bootstrap are validated independently — changes in
+one do not trigger validation of the other.
+
+Enable in a fresh clone (after `make install`):
 
 ```bash
-pre-commit install
+mise exec -- uv run pre-commit install
 ```
 
 Run against specific files (faster than `--all-files`):
 
 ```bash
-pre-commit run --files path/to/file1 path/to/file2
+mise exec -- uv run pre-commit run --files path/to/file1 path/to/file2
 ```
+
+Or simply `make lint` to run every hook against every file.
 
 ### Formatting (Source of Truth)
 
@@ -208,7 +255,8 @@ Do this as part of the same change that adds the first file of that type.
 
 - **Minimal changes**: prefer targeted edits over large refactors unless explicitly asked
 - **Follow existing patterns**: read the surrounding code before suggesting changes
-- **Pre-commit validation**: after modifying any source file, run `pre-commit run --files <changed files>` and fix every reported issue before finishing — do not skip or bypass hooks
+- **Pre-commit validation**: after modifying any source file, run `mise exec -- uv run pre-commit run --files <changed files>` (or `make lint` for a full sweep) and fix every reported issue before finishing — do not skip or bypass hooks
+- **Dev deps**: when adding/removing a Python dev dependency, prefer `mise exec -- uv add --group <group> <pkg>` / `uv remove <pkg>`. If editing `pyproject.toml` by hand, run `make lock` followed by `make install` and commit `pyproject.toml` and `uv.lock` together
 - **No secrets**: never generate tokens, passwords, or credentials — use GitHub Actions secrets
 - **Skills source of truth**: keep shared skills only in `.claude/skills/`; GitHub Copilot must use these shared skills and must not duplicate skill definitions under `.github/skills/`
 - **Commit messages**: use Conventional Commits format `type(scope): subject` (e.g. `fix(ci): handle missing env variable`), with an imperative subject and no trailing period

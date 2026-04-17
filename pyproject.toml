@@ -1,0 +1,22 @@
+# aws-demo-environment's own Python configuration.
+# This file exists only to declare test/dev dependencies; the project itself
+# is primarily Terraform, not a Python package.
+
+# cspell:words testpaths
+
+[project]
+name = "aws-demo-environment"
+version = "0.1.0"
+description = "AWS demo environment deployed with Terraform"
+requires-python = ">=3.14"
+dependencies = []
+
+[tool.uv]
+# This project has no installable Python package — uv should only manage
+# the dev dependencies declared below.
+package = false
+
+[dependency-groups]
+lint = ["pre-commit"]
+test = []
+dev = [{ include-group = "lint" }, { include-group = "test" }]

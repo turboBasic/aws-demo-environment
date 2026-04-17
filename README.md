@@ -62,14 +62,26 @@ flowchart TD
 
 ## Development Setup
 
-Install [pre-commit](https://pre-commit.com) and enable the hooks for this repo:
+The repo pins tool versions via [mise](https://mise.jdx.dev) and manages Python dev
+dependencies (currently just `pre-commit`) with [uv](https://docs.astral.sh/uv/).
+Common dev tasks are wrapped in the [Makefile](Makefile).
 
 ```bash
-brew install pre-commit   # macOS · or: pip install pre-commit
-pre-commit install        # enable hooks (once per clone)
+brew install mise                             # macOS · one-time, bootstraps uv + terraform
+make install                                  # uv sync --frozen — create .venv from uv.lock
+mise exec -- uv run pre-commit install        # enable git hooks (once per clone)
 ```
 
-For the full list of configured hooks, see [docs/ai-instructions.md](docs/ai-instructions.md#pre-commit).
+Other handy targets:
+
+```bash
+make help      # list all targets
+make lint      # run all pre-commit hooks against the whole repo
+make lock      # regenerate uv.lock after editing pyproject.toml
+```
+
+For the full list of configured hooks and the Make targets reference, see
+[docs/ai-instructions.md](docs/ai-instructions.md#pre-commit).
 
 ## Prerequisites
 
