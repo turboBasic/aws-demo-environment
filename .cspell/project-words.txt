@@ -25,4 +25,5 @@ resourcegroupstaggingapi
 targetgroup
 
 # Terraform words
+allfiles
 tfenv
