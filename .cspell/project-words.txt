@@ -1,6 +1,5 @@
 # Local project dictionary words
 # One word per line
-
 cargonautica
 cloudflare
 fargate
@@ -18,5 +17,7 @@ elbv
 eventbridge
 keepalive
 natgateway
+pymarkdown
+pyml
 resourcegroupstaggingapi
 targetgroup
