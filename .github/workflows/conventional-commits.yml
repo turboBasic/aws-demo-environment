@@ -1,4 +1,4 @@
-name: Conventional Commits
+name: "On PR & push: Conventional Commits"
 # cspell:ignore amannn commitlint wagoid
 
 on:
