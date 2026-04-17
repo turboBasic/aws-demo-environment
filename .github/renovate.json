@@ -1,11 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "addLabels": ["ci"],
+  "assignees": ["turboBasic"],
   "schedule": ["before 6am on monday"],
-  "commitMessagePrefix": "chore(deps):",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
   "enabledManagers": ["pep621"],
+  "prTitle": null,
   "lockFileMaintenance": {
     "enabled": true,
+    "commitMessageAction": "update lock file",
     "schedule": ["before 6am on monday"]
   }
 }
