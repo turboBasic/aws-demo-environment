@@ -15,5 +15,8 @@
     },
     "explorerExclude.backup": {},
     "hide-files.files": [],
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "json.schemaDownload.trustedDomains": {
+        "https://docs.renovatebot.com": true
+    }
 }
