@@ -17,7 +17,7 @@ trim_trailing_whitespace = false
 max_line_length = off
 
 # Terraform files
-[*.{tf,tfvars}]
+[*.{tf,tfvars,hcl,tftpl,tfvars.example}]
 indent_style = space
 indent_size = 2
 
@@ -57,7 +57,17 @@ indent_size = 2
 indent_style = space
 indent_size = 2
 
-# .gitignore and other git files
-[.gitignore]
+# Web files
+[*.{html,js,css}]
+indent_style = space
+indent_size = 2
+
+# Plain text files
+[*.txt]
+indent_style = space
+indent_size = 2
+
+# .gitignore and other dot files
+[.{gitignore,gitattributes,editorconfig}]
 indent_style = space
 indent_size = 2
