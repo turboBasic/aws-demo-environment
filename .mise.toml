@@ -1,2 +1,3 @@
 [tools]
+pre-commit = "latest"
 terraform = "prefix:1.14"
