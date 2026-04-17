@@ -1,65 +1,52 @@
 ---
 name: terraform
-description: Find terraform executable to run terraform commands
+description: Run the repo-pinned version of terraform via mise
 user-invocable: false
 model: Haiku
-allowed-tools: Bash(*/find-terraform.sh)
+allowed-tools: Bash(*/mise:*),Bash(mise:*)
 ---
 
-# Terraform Executable Locator
+# Terraform via mise
 
 ## Purpose
 
-This skill helps locate the correct `terraform` executable on the system, handling various installation methods (system PATH, mise, tfenv, asdf, Homebrew, etc.).
+Run `terraform` using the version pinned by this repo's [.mise.toml](../../../.mise.toml). [mise](https://mise.jdx.dev) resolves the correct terraform binary per directory.
 
 ## When to Use
 
-**ALWAYS** use this skill before running ANY `terraform` command. This includes:
-- `terraform init`
-- `terraform plan` 
-- `terraform apply`
-- `terraform destroy`
-- `terraform fmt`
-- `terraform validate`
-- Any other terraform subcommands
+**ALWAYS** use this skill before running ANY `terraform` command (`init`, `plan`, `apply`, `destroy`, `fmt`, `validate`, etc.).
 
-## How to Use
+## Step 1 — Locate `mise`
 
-1. **Find the executable once per session:**
-   Execute the [find-terraform.sh](scripts/find-terraform.sh) script to get the terraform path.
+Resolve `mise` once per session. Try these in order and stop at the first hit:
 
-2. **Cache the result:**
-   Store the returned path and reuse it for all subsequent terraform commands in the current conversation.
+1. `mise` already on `PATH` (use it as-is)
+2. `/opt/homebrew/bin/mise` — macOS Homebrew (Apple Silicon)
+3. `/usr/local/bin/mise` — macOS Homebrew (Intel) / common Linux install
+4. `/home/linuxbrew/.linuxbrew/bin/mise` — Linux Homebrew
+5. `$HOME/.local/bin/mise` — mise installer default
 
-3. **Use in commands:**
-   Replace `terraform` with the full path returned by the script in all commands.
+If none resolve, tell the user mise is missing and suggest `brew install mise` (or <https://mise.jdx.dev/getting-started.html>).
 
-## Example Usage
+## Step 2 — Run terraform
+
+Prefix every terraform invocation with `<mise> exec --`. mise reads `.mise.toml` from the current working directory and injects the pinned tool's `bin/` into `PATH` for the wrapped command.
 
 ```bash
-# Step 1: Find terraform (do this once)
-TERRAFORM_BIN=$(.claude/skills/terraform/scripts/find-terraform.sh)
-
-# Step 2: Use in commands
-$TERRAFORM_BIN init
-$TERRAFORM_BIN plan
-$TERRAFORM_BIN apply
+mise exec -- terraform init
+mise exec -- terraform plan
+mise exec -- terraform apply
+mise exec -- terraform fmt -check
 ```
 
-## Script Behavior
+Substitute the full path from Step 1 if `mise` is not on `PATH` (e.g. `/opt/homebrew/bin/mise exec -- terraform init`).
 
-The script checks for terraform in the following order:
-1. System PATH (`which terraform`)
-2. Mise installation (`~/.local/share/mise/installs/terraform/*/bin/terraform`)
-3. tfenv installation (`~/.tfenv/bin/terraform`)
-4. asdf installation (`~/.asdf/installs/terraform/*/bin/terraform`)
-5. Homebrew installation (macOS)
+## Working Directory
 
-Returns the first valid terraform executable found, or an error message if none found.
+`mise exec` reads `.mise.toml` relative to CWD. When operating on `bootstrap/` or any other subdirectory, `cd` into it first (or pass `--chdir`) so mise picks up the correct config.
 
 ## Error Handling
 
-If the script returns an error message (not a valid path), inform the user that terraform is not installed and suggest installation methods:
-- `brew install terraform` (macOS)
-- `mise install terraform` (if mise is available)
-- Download from https://www.terraform.io/downloads
+- **`mise` not found in any candidate path** → install via `brew install mise`, or see <https://mise.jdx.dev/getting-started.html>.
+- **`terraform: no such tool installed`** → run `mise install` from the repo root to install tools declared in `.mise.toml`.
+- **Version mismatch with `.mise.toml`** → run `mise install terraform` to sync.

@@ -5,6 +5,7 @@ cloudflare
 creds
 fargate
 hostnames
+linuxbrew
 mgmt
 obsidian
 tflock
@@ -22,3 +23,6 @@ pymarkdown
 pyml
 resourcegroupstaggingapi
 targetgroup
+
+# Terraform words
+tfenv

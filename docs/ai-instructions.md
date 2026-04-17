@@ -65,18 +65,17 @@ See [@.claude/skills/aws/SKILL.md](.claude/skills/aws/SKILL.md) for complete aut
 
 ## Terraform Executable Location
 
-**IMPORTANT**: Before running any Terraform commands, always use the terraform skill to locate the correct terraform executable on the system.
+**IMPORTANT**: Before running any Terraform commands, always use the terraform skill. The repo pins terraform via [.mise.toml](../.mise.toml); the skill runs that pinned version through Homebrew-installed [mise](https://mise.jdx.dev).
 
 Quick start:
 
 ```bash
-TERRAFORM_BIN=$(.claude/skills/terraform/scripts/find-terraform.sh)
-$TERRAFORM_BIN init
-$TERRAFORM_BIN plan
-$TERRAFORM_BIN apply
+/opt/homebrew/bin/mise exec -- terraform init
+/opt/homebrew/bin/mise exec -- terraform plan
+/opt/homebrew/bin/mise exec -- terraform apply
 ```
 
-See [@.claude/skills/terraform/SKILL.md](.claude/skills/terraform/SKILL.md) for complete documentation including supported installation methods and error handling.
+See [@.claude/skills/terraform/SKILL.md](.claude/skills/terraform/SKILL.md) for details and error handling.
 
 ## Terraform Commands
 
