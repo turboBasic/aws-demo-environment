@@ -101,9 +101,9 @@ See [@.claude/skills/aws/SKILL.md](.claude/skills/aws/SKILL.md) for complete aut
 Quick start:
 
 ```bash
-/opt/homebrew/bin/mise exec -- terraform init
-/opt/homebrew/bin/mise exec -- terraform plan
-/opt/homebrew/bin/mise exec -- terraform apply
+mise exec -- terraform init
+mise exec -- terraform plan
+mise exec -- terraform apply
 ```
 
 See [@.claude/skills/terraform/SKILL.md](.claude/skills/terraform/SKILL.md) for details and error handling.
