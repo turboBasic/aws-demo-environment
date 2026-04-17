@@ -2,13 +2,22 @@
 * text=auto eol=lf
 
 # Terraform
-*.tf        text eol=lf
-*.tfvars    text eol=lf
-*.hcl       text eol=lf
-*.tftpl     text eol=lf
+*.tf               text eol=lf
+*.tfvars           text eol=lf
+*.tfvars.example   text eol=lf
+*.hcl              text eol=lf
+*.tftpl            text eol=lf
 
 # Shell scripts
 *.sh        text eol=lf
+
+# Build / container
+Makefile    text eol=lf
+*.mk        text eol=lf
+Dockerfile* text eol=lf
+
+# Lockfiles
+*.lock      text eol=lf
 
 # Python
 *.py        text eol=lf diff=python
@@ -28,6 +37,10 @@
 # Docs
 *.md        text eol=lf
 *.markdown  text eol=lf
+
+# Tool config dotfiles
+.pymarkdown text eol=lf
+.yamllint   text eol=lf
 
 # Binary assets
 *.png       binary

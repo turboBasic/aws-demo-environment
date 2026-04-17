@@ -47,6 +47,10 @@ max_line_length = 88
 indent_style = space
 indent_size = 2
 
+# Makefiles — require literal tabs for recipe lines
+[{Makefile,makefile,GNUmakefile,*.mk}]
+indent_style = tab
+
 # Docker files
 [Dockerfile*]
 indent_style = space
@@ -71,3 +75,18 @@ indent_size = 2
 [.{gitignore,gitattributes,editorconfig}]
 indent_style = space
 indent_size = 2
+
+# pymarkdown config (TOML syntax)
+[.pymarkdown]
+indent_style = space
+indent_size = 2
+
+# yamllint config (YAML syntax)
+[.yamllint]
+indent_style = space
+indent_size = 2
+
+# Lockfiles (uv.lock, *.lock) — managed by tooling, keep deterministic indentation
+[*.lock]
+indent_style = space
+indent_size = 4
