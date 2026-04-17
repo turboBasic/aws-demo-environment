@@ -28,4 +28,20 @@ repos:
     rev: v1.105.0
     hooks:
       - id: terraform_fmt
-      - id: terraform_validate
+
+  - repo: local
+    hooks:
+      - id: terraform-validate-root
+        name: terraform validate (root module)
+        entry: scripts/terraform-validate-module.sh .
+        language: script
+        files: \.(tf|tfvars)$
+        exclude: ^bootstrap/
+        pass_filenames: false
+
+      - id: terraform-validate-bootstrap
+        name: terraform validate (bootstrap module)
+        entry: scripts/terraform-validate-module.sh bootstrap
+        language: script
+        files: ^bootstrap/.*\.(tf|tfvars)$
+        pass_filenames: false
