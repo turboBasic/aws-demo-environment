@@ -41,7 +41,7 @@ template at `.github/PULL_REQUEST_TEMPLATE.md`.
 5. **Output** — wrap the completed description in a fenced markdown code block tagged
    `markdown` so the user can copy the raw text in one click:
 
-   ````
+   ````text
    ```markdown
    ## Description
    …
@@ -59,7 +59,7 @@ template at `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## Example invocation
 
-```
+```text
 /pr-description
 ```
 

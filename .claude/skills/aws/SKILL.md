@@ -15,6 +15,7 @@ This skill helps configure AWS authentication for the `cargonautica` AWS profile
 ## When to Use
 
 Use this skill **before** running:
+
 - Any AWS CLI commands (`aws s3`, `aws ec2`, etc.)
 - Terraform commands that interact with AWS (`terraform plan`, `terraform apply`, etc.)
 - When authentication errors occur (expired SSO session)
@@ -92,6 +93,7 @@ See [@.claude/scripts/aws-sso-credentials.sh](../../scripts/aws-sso-credentials.
 **Error**: `Error when retrieving token from sso: Token has expired`
 
 **Resolution**: Inform user to re-authenticate:
+
 ```bash
 aws sso login --profile cargonautica
 ```
