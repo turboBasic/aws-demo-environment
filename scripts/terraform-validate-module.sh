@@ -1,40 +1,68 @@
 #!/usr/bin/env bash
+#
 # Validate a single Terraform module (root or bootstrap/).
-# Pass the target directory relative to the repo root as the first argument
-# (defaults to the repo root). Uses the repo-pinned terraform version via mise.
+#
+# Usage:
+#   ./terraform-validate-module.sh [TARGET_DIR]
+#
+# Arguments:
+#   TARGET_DIR   Directory to validate, relative to repo root (default: .)
+#
+# Example:
+#   ./terraform-validate-module.sh bootstrap
+#
+
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET_DIR="$REPO_ROOT/${1:-.}"
+main() {
+  local repo_root target_dir mise_bin
 
-if [[ ! -d "$TARGET_DIR" ]]; then
-    echo "ERROR: target directory not found: $TARGET_DIR" >&2
+  repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  target_dir="$(resolve_target_dir "$repo_root" "${1:-.}")"
+  mise_bin="$(resolve_mise)"
+  run_validate "$target_dir" "$mise_bin"
+}
+
+resolve_target_dir() {
+  local repo_root="$1" target="$2"
+  local full_path="$repo_root/$target"
+
+  if [[ ! -d "$full_path" ]]; then
+    echo "ERROR: target directory not found: $full_path" >&2
     exit 1
-fi
+  fi
 
-# Resolve mise: PATH first, then common Homebrew / installer locations on macOS & Linux.
-if command -v mise >/dev/null 2>&1; then
-    MISE_BIN="mise"
-else
-    MISE_BIN=""
-    for candidate in \
-        /opt/homebrew/bin/mise \
-        /usr/local/bin/mise \
-        /home/linuxbrew/.linuxbrew/bin/mise \
-        "$HOME/.local/bin/mise"; do
-        if [[ -x "$candidate" ]]; then
-            MISE_BIN="$candidate"
-            break
-        fi
-    done
-fi
+  echo "$full_path"
+}
 
-if [[ -z "$MISE_BIN" ]]; then
-    echo "ERROR: mise not found. Install via 'brew install mise' or see https://mise.jdx.dev/getting-started.html" >&2
-    exit 1
-fi
+resolve_mise() {
+  if command -v mise >/dev/null 2>&1; then
+    echo "mise"
+    return
+  fi
 
-cd "$TARGET_DIR"
+  local candidate
+  for candidate in \
+    /opt/homebrew/bin/mise \
+    /usr/local/bin/mise \
+    /home/linuxbrew/.linuxbrew/bin/mise \
+    "$HOME/.local/bin/mise"; do
+    if [[ -x "$candidate" ]]; then
+      echo "$candidate"
+      return
+    fi
+  done
 
-"$MISE_BIN" exec -- terraform init -backend=false -input=false -no-color >/dev/null
-exec "$MISE_BIN" exec -- terraform validate -no-color
+  echo "ERROR: mise not found. Install via 'brew install mise' or see https://mise.jdx.dev/getting-started.html" >&2
+  exit 1
+}
+
+run_validate() {
+  local target_dir="$1" mise_bin="$2"
+
+  cd "$target_dir"
+  "$mise_bin" exec -- terraform init -backend=false -input=false -no-color >/dev/null
+  exec "$mise_bin" exec -- terraform validate -no-color
+}
+
+main "$@"
