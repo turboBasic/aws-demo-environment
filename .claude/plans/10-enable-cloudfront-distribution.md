@@ -77,7 +77,7 @@ This provides equivalent security without consuming quota.
 **Solution:** Upload files to `s3://bucket/static/` prefix to match CloudFront's `/static/*` pattern. Created `assets/static/` directory for version control and sync to S3 with correct prefix using:
 
 ```bash
-aws s3 sync assets/static/ s3://bucket-name/static/ --profile cargonautica
+aws s3 sync assets/static/ s3://bucket-name/static/ --profile Cargonautica
 ```
 
 **Commit:** `cd9f405` - feat(static): add static content test files for CloudFront/S3
@@ -536,7 +536,7 @@ resource "cloudflare_dns_record" "www" {
 
 ```bash
 # Upload to S3 with correct prefix
-aws s3 sync assets/static/ s3://$(terraform output -raw s3_static_bucket_name)/static/ --profile cargonautica
+aws s3 sync assets/static/ s3://$(terraform output -raw s3_static_bucket_name)/static/ --profile Cargonautica
 ```
 
 **Note:** Files must be uploaded to `s3://bucket/static/` to match CloudFront's `/static/*` path pattern. The `assets/` directory contains source files for version control.
@@ -736,13 +736,13 @@ Static content is deployed from the `assets/static/` directory:
 ```bash
 # Static files are version controlled in assets/static/
 # Sync to S3 with correct prefix
-aws s3 sync assets/static/ s3://$(terraform output -raw s3_static_bucket_name)/static/ --profile cargonautica
+aws s3 sync assets/static/ s3://$(terraform output -raw s3_static_bucket_name)/static/ --profile Cargonautica
 
 # Invalidate CloudFront cache if content is updated
 aws cloudfront create-invalidation \
   --distribution-id $(terraform output -raw cloudfront_distribution_id) \
   --paths "/static/*" \
-  --profile cargonautica
+  --profile Cargonautica
 ```
 
 **Important:** Files must be uploaded to `s3://bucket/static/` to match CloudFront's `/static/*` path pattern.

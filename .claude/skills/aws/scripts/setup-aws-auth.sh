@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Set up AWS authentication by exporting the cargonautica profile.
+# Set up AWS authentication by exporting the Cargonautica profile.
 #
 # Usage:
 #   source .claude/skills/aws/scripts/setup-aws-auth.sh

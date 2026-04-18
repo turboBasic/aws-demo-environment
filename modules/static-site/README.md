@@ -158,7 +158,7 @@ Upload static files to S3 at path `/static`:
 aws s3 sync ./assets/static/ \
   s3://ade-dev-static-381492075850/static/ \
   --delete \
-  --profile cargonautica
+  --profile Cargonautica
 
 # Invalidate CloudFront distribution cache
 aws cloudfront create-invalidation --distribution-id "$(terraform output -raw cloudfront_distribution_id)" --paths "/*"
@@ -174,7 +174,7 @@ When updating static files:
 aws cloudfront create-invalidation \
   --distribution-id E1E23QKYQBHFUB \
   --paths "/*" \
-  --profile cargonautica
+  --profile Cargonautica
 ```
 
 ## Monitoring
