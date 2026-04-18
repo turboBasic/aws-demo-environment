@@ -1,34 +1,59 @@
 #!/usr/bin/env bash
+#
+# Check if AWS authentication is valid for the specified profile.
+#
+# Usage:
+#   ./check-aws-auth.sh
+#
+# Environment:
+#   AWS_PROFILE   Profile name (default: Cargonautica)
+#
+# Exit codes:
+#   0   Authentication valid
+#   1   Authentication invalid or missing AWS CLI
+#
+
 set -euo pipefail
 
-# Check if AWS authentication is valid for the cargonautica profile
-# Returns 0 if valid, 1 if invalid/expired
+main() {
+  local profile="${AWS_PROFILE:-Cargonautica}"
 
-PROFILE="${AWS_PROFILE:-cargonautica}"
+  check_aws_cli_installed
+  verify_authentication "$profile"
+  display_identity "$profile"
+}
 
-# Check if AWS CLI is available
-if ! command -v aws &> /dev/null; then
+check_aws_cli_installed() {
+  if ! command -v aws &> /dev/null; then
     echo "ERROR: AWS CLI not found. Please install AWS CLI." >&2
     exit 1
-fi
+  fi
+}
 
-# Try to get caller identity
-if aws sts get-caller-identity --profile "$PROFILE" &> /dev/null; then
-    echo "✓ AWS authentication is valid for profile: $PROFILE"
-
-    # Show current identity
-    IDENTITY=$(aws sts get-caller-identity --profile "$PROFILE" --output json 2>/dev/null)
-    ACCOUNT=$(echo "$IDENTITY" | grep -o '"Account": "[^"]*"' | cut -d'"' -f4)
-    ARN=$(echo "$IDENTITY" | grep -o '"Arn": "[^"]*"' | cut -d'"' -f4)
-
-    echo "  Account: $ACCOUNT"
-    echo "  Identity: $ARN"
-    exit 0
-else
-    echo "ERROR: AWS authentication failed for profile: $PROFILE" >&2
+verify_authentication() {
+  local profile="$1"
+  if ! aws sts get-caller-identity --profile "$profile" &> /dev/null; then
+    echo "ERROR: AWS authentication failed for profile: $profile" >&2
     echo "  Possible causes:" >&2
-    echo "    - SSO session expired (run: aws sso login --profile $PROFILE)" >&2
+    echo "    - SSO session expired (run: aws sso login --profile $profile)" >&2
     echo "    - Invalid credentials" >&2
     echo "    - Profile not configured" >&2
     exit 1
-fi
+  fi
+}
+
+display_identity() {
+  local profile="$1"
+  local identity account arn
+
+  echo "✓ AWS authentication is valid for profile: $profile"
+
+  identity=$(aws sts get-caller-identity --profile "$profile" --output json 2>/dev/null)
+  account=$(echo "$identity" | grep -o '"Account": "[^"]*"' | cut -d'"' -f4)
+  arn=$(echo "$identity" | grep -o '"Arn": "[^"]*"' | cut -d'"' -f4)
+
+  echo "  Account: $account"
+  echo "  Identity: $arn"
+}
+
+main "$@"
