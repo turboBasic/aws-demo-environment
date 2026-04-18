@@ -85,10 +85,10 @@ out of sync with `pyproject.toml` — this is intentional and enforces reproduci
 
 **IMPORTANT**: Always use the `aws` skill to configure authentication before running AWS CLI commands or Terraform operations.
 
-When executing AWS CLI commands or Terraform, use the `cargonautica` AWS profile:
+When executing AWS CLI commands or Terraform, use the `Cargonautica` AWS profile:
 
 ```bash
-export AWS_PROFILE=cargonautica
+export AWS_PROFILE=Cargonautica
 aws sts get-caller-identity
 ```
 

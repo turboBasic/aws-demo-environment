@@ -43,7 +43,7 @@ asc_extract_access_token() {
 
   if [[ -z "$access_token" ]] || [[ "$access_token" == "null" ]]; then
     echo "❌ Error: No valid SSO token found in cache" >&2
-    echo "   Run: aws sso login --profile cargonautica" >&2
+    echo "   Run: aws sso login --profile Cargonautica" >&2
     return 1
   fi
 
@@ -64,7 +64,7 @@ asc_get_role_credentials() {
     --region "$sso_region" 2>/dev/null) || {
     echo "❌ Error: Failed to get role credentials" >&2
     echo "   Your SSO session may have expired" >&2
-    echo "   Run: aws sso login --profile cargonautica" >&2
+    echo "   Run: aws sso login --profile Cargonautica" >&2
     return 1
   }
 

@@ -10,7 +10,7 @@ allowed-tools: Bash(*/setup-aws-auth.sh), Bash(*/check-aws-auth.sh)
 
 ## Purpose
 
-This skill helps configure AWS authentication for the `cargonautica` AWS profile, supporting both AWS CLI commands and Terraform operations.
+This skill helps configure AWS authentication for the `Cargonautica` AWS profile, supporting both AWS CLI commands and Terraform operations.
 
 ## When to Use
 
@@ -34,7 +34,7 @@ This verifies if the current AWS authentication is valid.
 
 ```bash
 # Export AWS profile (preferred method)
-export AWS_PROFILE=cargonautica
+export AWS_PROFILE=Cargonautica
 
 # Verify it works
 aws sts get-caller-identity
@@ -45,7 +45,7 @@ aws sts get-caller-identity
 If SSO session is expired, prompt the user to run:
 
 ```bash
-aws sso login --profile cargonautica
+aws sso login --profile Cargonautica
 ```
 
 Then retry the authentication check.
@@ -65,7 +65,7 @@ source .claude/scripts/aws-sso-credentials.sh
 Most reliable for both AWS CLI and Terraform:
 
 ```bash
-export AWS_PROFILE=cargonautica
+export AWS_PROFILE=Cargonautica
 
 # AWS CLI automatically uses the profile
 aws s3 ls
@@ -95,12 +95,12 @@ See [@.claude/scripts/aws-sso-credentials.sh](../../scripts/aws-sso-credentials.
 **Resolution**: Inform user to re-authenticate:
 
 ```bash
-aws sso login --profile cargonautica
+aws sso login --profile Cargonautica
 ```
 
 ### Profile Not Found
 
-**Error**: `Profile cargonautica could not be found`
+**Error**: `Profile Cargonautica could not be found`
 
 **Resolution**: Verify AWS CLI configuration file (`~/.aws/config`) contains the profile definition.
 
@@ -109,7 +109,7 @@ aws sso login --profile cargonautica
 **Error**: `Unable to locate credentials`
 
 **Resolution**:
-1. Ensure `AWS_PROFILE=cargonautica` is exported
+1. Ensure `AWS_PROFILE=Cargonautica` is exported
 2. Check SSO session is valid with `aws sts get-caller-identity`
 3. Re-run SSO login if needed
 
@@ -126,8 +126,8 @@ aws sso login --profile cargonautica
 Terraform automatically uses `AWS_PROFILE` environment variable via the AWS SDK:
 
 ```bash
-export AWS_PROFILE=cargonautica
-terraform plan  # Uses cargonautica profile automatically
+export AWS_PROFILE=Cargonautica
+terraform plan  # Uses Cargonautica profile automatically
 ```
 
 No additional provider configuration needed in Terraform code when using profiles.

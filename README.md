@@ -107,7 +107,7 @@ Bootstrap infrastructure must be applied first — see [bootstrap/README.md](boo
 ## Usage
 
 ```bash
-export AWS_PROFILE=cargonautica
+export AWS_PROFILE=Cargonautica
 aws sso login
 
 # 1. Complete bootstrap setup (once)
