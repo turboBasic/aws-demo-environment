@@ -11,19 +11,18 @@
 
 # AWS Demo Environment
 
-Ephemeral 1-day AWS demo environment (VPC, ALB, NAT, EC2) with automated cleanup via a Lambda container that runs `terraform destroy` after 24h.
+Ephemeral AWS demo environment fronted by CloudFront and an ALB (ECS Fargate backend, optional EC2 web instance), alongside persistent S3-backed Obsidian vaults and MFA-enforced generic storage. TTL-tagged demo resources are cleaned up automatically after 24h by a scheduled Lambda destroyer.
 
 ## Architecture
 
-Two-stage architecture:
+Two-stage deployment:
 
-1. **`bootstrap/`** (persistent, apply once) — S3 state backend, DynamoDB locks, Secrets Manager, ECR repo, Lambda destroyer, EventBridge hourly schedule
-2. **Root module `/`** (ephemeral demo) — VPC, subnets, NAT Gateway, ALB, EC2 instance
-3. Bootstrap creates persistent infra (state, Lambda), root creates ephemeral demo. Lambda destroys only root state.
+1. **`bootstrap/`** (persistent, apply once) — S3 state backend, S3 state-backup bucket, DynamoDB lock table, Lambda destroyer, EventBridge hourly schedule, IAM roles.
+2. **Root module `/`** (ephemeral demo) — VPC and networking, ALB, ECS Fargate service, optional NAT Gateway, optional EC2 web instance, CloudFront + S3 static site, ACM certificates, Cloudflare DNS, Obsidian vaults, MFA-enforced generic storage.
 
-The Lambda destroyer checks the state file age hourly and runs `terraform destroy` when TTL expires.
+The Lambda destroyer checks the root-module state-file age hourly; when the TTL expires, it deletes TTL-tagged resources (ALB, ECS services, target groups, EC2 instances, NAT gateways, Elastic IPs) via AWS SDK calls. It does **not** invoke `terraform destroy`.
 
-Other key design principles are provided in @.claude/plans/04-00-aws-demo-environment-architecture.md file, section "Key Design Decisions".
+See [README.md](../README.md#architecture) for a visual diagram, and [@.claude/plans/04-00-aws-demo-environment-architecture.md](.claude/plans/04-00-aws-demo-environment-architecture.md) section "Key Design Decisions" for design rationale.
 
 ## Tech Stack
 
@@ -175,7 +174,7 @@ aws-demo-environment/
     ├── terraform.tfvars.example     # Example variable values
     ├── README.md                    # Bootstrap deployment instructions
     └── lambda-destroyer/
-        └── handler.py              # TTL check + terraform destroy via subprocess
+        └── handler.py              # TTL check + deletion of TTL-tagged resources via AWS SDK
 ```
 
 ## Code Style & Conventions
