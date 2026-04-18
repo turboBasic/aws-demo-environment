@@ -1,6 +1,6 @@
 # AWS Authentication Skill
 
-Helper scripts and documentation for managing AWS authentication with the `cargonautica` profile.
+Helper scripts and documentation for managing AWS authentication with the `Cargonautica` profile.
 
 ## Files
 
@@ -15,16 +15,15 @@ Helper scripts and documentation for managing AWS authentication with the `cargo
 .claude/skills/aws/scripts/check-aws-auth.sh
 
 # Set up authentication (should be sourced to export AWS_PROFILE)
-export AWS_PROFILE=cargonautica
-aws sts get-caller-identity
+source .claude/skills/aws/scripts/setup-aws-auth.sh
 ```
 
 ## Authentication Flow
 
 1. **Check** if authentication is valid with `check-aws-auth.sh`
-2. **Export** the AWS profile: `export AWS_PROFILE=cargonautica`
+2. **Export** the AWS profile: `export AWS_PROFILE=Cargonautica`
 3. **Verify** with AWS CLI: `aws sts get-caller-identity`
-4. **If expired**, user must run: `aws sso login --profile cargonautica`
+4. **If expired**, user must run: `aws sso login --profile Cargonautica`
 
 ## Integration
 
