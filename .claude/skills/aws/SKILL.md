@@ -58,34 +58,6 @@ If explicit credentials are needed (rare cases), use:
 source .claude/scripts/aws-sso-credentials.sh
 ```
 
-## Authentication Methods
-
-### Method 1: AWS Profile (Recommended)
-
-Most reliable for both AWS CLI and Terraform:
-
-```bash
-export AWS_PROFILE=Cargonautica
-
-# AWS CLI automatically uses the profile
-aws s3 ls
-
-# Terraform automatically uses the profile (via AWS SDK)
-terraform plan
-```
-
-### Method 2: Temporary Credentials Export
-
-For cases requiring explicit environment variables:
-
-```bash
-source .claude/scripts/aws-sso-credentials.sh
-
-# This sets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
-```
-
-See [@.claude/scripts/aws-sso-credentials.sh](../../scripts/aws-sso-credentials.sh) for implementation.
-
 ## Error Handling
 
 ### SSO Session Expired
@@ -112,22 +84,3 @@ aws sso login --profile Cargonautica
 1. Ensure `AWS_PROFILE=Cargonautica` is exported
 2. Check SSO session is valid with `aws sts get-caller-identity`
 3. Re-run SSO login if needed
-
-## Best Practices
-
-1. **Always export AWS_PROFILE** at the start of terminal sessions
-2. **Verify authentication** before running expensive operations
-3. **Inform user** if SSO re-authentication is needed (can't be automated)
-4. **Use profile over credentials** - more secure and manageable
-5. **Don't print credentials** in terminal output
-
-## Integration with Terraform
-
-Terraform automatically uses `AWS_PROFILE` environment variable via the AWS SDK:
-
-```bash
-export AWS_PROFILE=Cargonautica
-terraform plan  # Uses Cargonautica profile automatically
-```
-
-No additional provider configuration needed in Terraform code when using profiles.

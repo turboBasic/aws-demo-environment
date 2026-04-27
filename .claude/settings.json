@@ -1,10 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(terraform fmt:*)",
-      "Bash(terraform version:*)",
-      "Bash(*/terraform fmt:*)",
-      "Bash(*/terraform version)",
       "Bash(*/check-aws-auth.sh)",
       "Bash(*/setup-aws-auth.sh)",
       "Bash(*/mise:*)",
