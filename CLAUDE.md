@@ -21,4 +21,3 @@ The shared instructions above apply to all AI tools. The notes below are Claude 
 ### Commits & PRs
 
 - Do not commit or push unless explicitly asked.
-- For commit message format, follow `docs/ai-instructions.md` (Conventional Commits).
