@@ -3,7 +3,20 @@
     "allow": [
       "Bash(*/check-aws-auth.sh)",
       "Bash(*/setup-aws-auth.sh)",
-      "Bash(*/mise:*)",
+      "Bash(mise exec -- terraform fmt:*)",
+      "Bash(mise exec -- terraform validate:*)",
+      "Bash(mise exec -- terraform init:*)",
+      "Bash(mise exec -- terraform plan:*)",
+      "Bash(mise exec -- terraform apply:*)",
+      "Bash(mise exec -- terraform destroy:*)",
+      "Bash(mise exec -- terraform output:*)",
+      "Bash(mise exec -- terraform show:*)",
+      "Bash(mise exec -- terraform version:*)",
+      "Bash(mise exec -- uv run pre-commit run:*)",
+      "Bash(mise exec -- uv sync:*)",
+      "Bash(mise exec -- uv lock:*)",
+      "Bash(mise exec -- uv add:*)",
+      "Bash(mise exec -- uv remove:*)",
       "WebSearch",
       "WebFetch(domain:registry.terraform.io)"
     ]

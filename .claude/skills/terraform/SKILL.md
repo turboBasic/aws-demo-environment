@@ -3,7 +3,7 @@ name: terraform
 description: Run the repo-pinned version of terraform via mise
 user-invocable: false
 model: Haiku
-allowed-tools: Bash(*/mise:*),Bash(mise:*)
+allowed-tools: Bash(mise exec -- terraform fmt:*), Bash(mise exec -- terraform validate:*), Bash(mise exec -- terraform init:*), Bash(mise exec -- terraform plan:*), Bash(mise exec -- terraform apply:*), Bash(mise exec -- terraform destroy:*), Bash(mise exec -- terraform output:*), Bash(mise exec -- terraform show:*), Bash(mise exec -- terraform version:*)
 ---
 
 # Terraform via mise
