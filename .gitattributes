@@ -39,8 +39,9 @@ Dockerfile* text eol=lf
 *.markdown  text eol=lf
 
 # Tool config dotfiles
-.pymarkdown text eol=lf
-.yamllint   text eol=lf
+.commitlintrc.json text eol=lf
+.pymarkdown        text eol=lf
+.yamllint          text eol=lf
 
 # Binary assets
 *.png       binary
