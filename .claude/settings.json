@@ -20,5 +20,18 @@
       "WebSearch",
       "WebFetch(domain:registry.terraform.io)"
     ]
+  },
+  "enabledPlugins": {
+    "stacks@turbobasic": true,
+    "hygiene@turbobasic": true,
+    "review@turbobasic": true
+  },
+  "extraKnownMarketplaces": {
+    "turbobasic": {
+      "source": {
+        "source": "github",
+        "repo": "turboBasic/claude-plugins"
+      }
+    }
   }
 }
